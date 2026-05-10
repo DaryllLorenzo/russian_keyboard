@@ -1,56 +1,46 @@
 #!/usr/bin/env python3
 """
-🇷🇺 Russian Virtual Keyboard — PyQt6  v2
-Dark-mode GUI for typing Cyrillic on an English keyboard.
+Russian Virtual Keyboard — PyQt6
 
-Novedades v2:
-  • Mapeo de teclado físico — presiona Q/W/E... y escribe cirílico directamente
-    (sigue el layout activo: ЙЦУКЕН o Fonético). Backtick (`) → ё
-  • Historial de frases — guarda frases con 💾, recupéralas con un clic
+A dark-mode GUI for typing Cyrillic using an English keyboard layout.
+Supports two layouts: ЙЦУКЕН (standard) and Fonetico (QWERTY-based phonetic).
+Physical keyboard input is intercepted and converted on the fly.
 
-Requisitos:
-  pip install pyqt6 pynput
+Requirements:
+  pip install pyqt6
 """
 
 import sys
-import threading
-
-from PyQt6.QtCore    import Qt, QTimer, pyqtSignal, QObject
-from PyQt6.QtGui     import QKeyEvent
+from PyQt6.QtCore import Qt, QSize, QTimer  # ← QTimer moved to top-level import
+from PyQt6.QtGui import QKeyEvent, QPainter, QFont, QColor, QPalette
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit, QLabel,
     QButtonGroup, QRadioButton,
     QListWidget, QListWidgetItem, QFrame,
+    QSizePolicy, QSpacerItem,
+    QSlider, QSpinBox,
 )
 
-# ── pynput (opcional) ─────────────────────────────────────────────────────────
-try:
-    from pynput.keyboard import Controller as _KbCtrl
-    _kb = _KbCtrl()
-    HAS_PYNPUT = True
-except ImportError:
-    HAS_PYNPUT = False
-
-# ── Paleta dark ───────────────────────────────────────────────────────────────
-BG       = "#1a1a2e"
-SURFACE  = "#16213e"
-KEY      = "#0f3460"
-HOVER    = "#1a4a80"
-PRESSED  = "#e94560"
-ACCENT   = "#e94560"
-FG       = "#eaeaea"
-DIM      = "#7a8599"
-AREA_BG  = "#0d0d1a"
-GREEN    = "#27ae60"
+# ── Palette ──────────────────────────────────────────────────────────────────
+BG       = "#1e1e1e"
+SURFACE  = "#2a2a2a"
+SURFACE2  = "#333333"
+KEY_BG   = "#3c3c3c"
+KEY_HOV  = "#4a4a4a"
+KEY_ACT  = "#e94560"
+FG       = "#e8e8e8"
+FG_DIM   = "#909090"
+AREA_BG  = "#141414"
+GREEN    = "#2ecc71"
 RED_BTN  = "#c0392b"
 BLUE_BTN = "#2980b9"
-HIST_BG  = "#12122a"
-HIST_SEL = "#1e1e4a"
+ORANGE   = "#c67c00"
+HIST_BG  = "#1e1e1e"
+HIST_SEL = "#383838"
 
 # ── Layouts ───────────────────────────────────────────────────────────────────
-# Cada tecla: (minúscula, mayúscula, pista_latina)
 LAYOUTS: dict[str, list[list[tuple[str, str, str]]]] = {
     "ЙЦУКЕН": [
         [("й","Й","Q"),("ц","Ц","W"),("у","У","E"),("к","К","R"),("е","Е","T"),
@@ -74,9 +64,9 @@ LAYOUTS: dict[str, list[list[tuple[str, str, str]]]] = {
     ],
 }
 
-ROW_INDENT = [0, 22, 44]
+ROW_INDENT = [0, 18, 36]
 
-# ── Mapeo Qt.Key → posición en layout ─────────────────────────────────────────
+# ── QWERTY physical key mapping ────────────────────────────────────────────────
 QWERTY_ROWS: list[list[Qt.Key]] = [
     [Qt.Key.Key_Q, Qt.Key.Key_W, Qt.Key.Key_E, Qt.Key.Key_R, Qt.Key.Key_T,
      Qt.Key.Key_Y, Qt.Key.Key_U, Qt.Key.Key_I, Qt.Key.Key_O, Qt.Key.Key_P,
@@ -89,39 +79,40 @@ QWERTY_ROWS: list[list[Qt.Key]] = [
 ]
 
 def build_mapping(layout_name: str) -> dict[Qt.Key, tuple[str, str]]:
-    """Devuelve {Qt.Key → (minúscula, mayúscula)} para el layout activo."""
     mapping: dict[Qt.Key, tuple[str, str]] = {}
     for qt_row, layout_row in zip(QWERTY_ROWS, LAYOUTS[layout_name]):
         for qt_key, (lower, upper, _) in zip(qt_row, layout_row):
             mapping[qt_key] = (lower, upper)
-    mapping[Qt.Key.Key_QuoteLeft] = ("ё", "Ё")   # backtick → ё
+    mapping[Qt.Key.Key_QuoteLeft] = ("ё", "Ё")
     return mapping
 
-# ── Stylesheet ────────────────────────────────────────────────────────────────
+# ── Stylesheet ─────────────────────────────────────────────────────────────────
+# ✅ Headers made larger and bolder | ✅ QTextEdit font-size removed (now controlled programmatically)
 QSS = f"""
 QMainWindow, QWidget#root {{ background: {BG}; }}
 
 QTextEdit {{
     background: {AREA_BG}; color: {FG};
-    border: 1px solid {ACCENT}; border-radius: 4px;
+    border: 1px solid #404040; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 14px; padding: 8px;
-    selection-background-color: {ACCENT};
+    /* font-size removed — controlled via set_font_size() */
+    padding: 8px;
+    selection-background-color: {KEY_ACT};
 }}
 QLabel#status {{
-    color: {DIM}; font-size: 11px; padding: 2px 0 4px 0;
+    color: {FG_DIM}; font-size: 11px; padding: 2px 0 4px 0;
 }}
 QLabel#title {{
-    color: {FG}; font-size: 14px; font-weight: bold;
+    color: {FG}; font-size: 20px; font-weight: 800;  /* ✅ BIGGER & BOLDER */
     font-family: Consolas, "Courier New", monospace;
 }}
 QLabel#histTitle {{
-    color: {FG}; font-size: 12px; font-weight: bold;
+    color: {FG}; font-size: 18px; font-weight: 700;  /* ✅ BIGGER & BOLDER */
     font-family: Consolas, "Courier New", monospace;
     padding: 4px 0 2px 0;
 }}
 QLabel#kbHint {{
-    color: {DIM}; font-size: 10px;
+    color: {FG_DIM}; font-size: 10px;
     font-family: Consolas, "Courier New", monospace;
     padding: 0 0 2px 0;
 }}
@@ -132,76 +123,76 @@ QRadioButton {{
 }}
 QRadioButton::indicator {{
     width: 14px; height: 14px; border-radius: 7px;
-    border: 2px solid {DIM}; background: {SURFACE};
+    border: 2px solid {FG_DIM}; background: {SURFACE};
 }}
-QRadioButton::indicator:checked {{ background: {ACCENT}; border-color: {ACCENT}; }}
+QRadioButton::indicator:checked {{ background: {KEY_ACT}; border-color: {KEY_ACT}; }}
 
 QPushButton#charKey {{
-    background: {KEY}; color: {FG}; border: none; border-radius: 6px;
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 12px; min-width: 44px; min-height: 48px; padding: 2px;
+    background: {KEY_BG};
 }}
-QPushButton#charKey:hover   {{ background: {HOVER}; }}
-QPushButton#charKey:pressed {{ background: {PRESSED}; color: white; }}
-
-QPushButton#shiftKey {{
-    background: {KEY}; color: {FG}; border: none; border-radius: 6px;
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 11px; font-weight: bold;
-    min-width: 80px; min-height: 44px; padding: 0 12px;
-}}
-QPushButton#shiftKey:hover {{ background: {HOVER}; }}
-QPushButton#shiftKey[active="true"] {{ background: {ACCENT}; color: white; }}
+QPushButton#charKey:hover   {{ background: {KEY_HOV}; }}
+QPushButton#charKey:pressed {{ background: {KEY_ACT}; }}
 
 QPushButton#wideKey {{
-    background: {KEY}; color: {DIM}; border: none; border-radius: 6px;
+    background: {KEY_BG}; color: {FG_DIM}; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 11px; min-width: 140px; min-height: 44px;
+    font-size: 12px;
 }}
-QPushButton#wideKey:hover   {{ background: {HOVER}; color: {FG}; }}
-QPushButton#wideKey:pressed {{ background: {PRESSED}; color: white; }}
+QPushButton#wideKey:hover   {{ background: {KEY_HOV}; color: {FG}; }}
+QPushButton#wideKey:pressed {{ background: {KEY_ACT}; color: white; }}
 
 QPushButton#bsKey {{
-    background: {KEY}; color: {FG}; border: none; border-radius: 6px;
-    font-size: 16px; min-width: 52px; min-height: 44px;
+    background: {KEY_BG}; color: {FG}; border: none; border-radius: 4px;
+    font-size: 16px;
 }}
-QPushButton#bsKey:hover   {{ background: {HOVER}; }}
-QPushButton#bsKey:pressed {{ background: {PRESSED}; color: white; }}
+QPushButton#bsKey:hover   {{ background: {KEY_HOV}; }}
+QPushButton#bsKey:pressed {{ background: {KEY_ACT}; color: white; }}
+
+QPushButton#shiftKey {{
+    background: {BLUE_BTN}; color: white; border: none; border-radius: 4px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px; font-weight: bold;
+}}
+QPushButton#shiftKey:hover {{ background: #3498db; }}
+QPushButton#shiftKey:pressed {{ background: #217dbb; }}
+QPushButton#shiftKey[active="true"] {{
+    background: {KEY_ACT}; color: white;
+}}
 
 QPushButton#actionGreen {{
-    background: {GREEN}; color: white; border: none; border-radius: 5px;
+    background: {GREEN}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
     font-size: 11px; font-weight: bold; padding: 7px 14px;
 }}
-QPushButton#actionGreen:hover {{ background: #2ecc71; }}
+QPushButton#actionGreen:hover {{ background: #3dde8a; }}
 
 QPushButton#actionRed {{
-    background: {RED_BTN}; color: white; border: none; border-radius: 5px;
+    background: {RED_BTN}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
     font-size: 11px; font-weight: bold; padding: 7px 14px;
 }}
 QPushButton#actionRed:hover {{ background: #e74c3c; }}
 
 QPushButton#actionBlue {{
-    background: {BLUE_BTN}; color: white; border: none; border-radius: 5px;
+    background: {BLUE_BTN}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
     font-size: 11px; font-weight: bold; padding: 7px 14px;
 }}
 QPushButton#actionBlue:hover {{ background: #3498db; }}
 
 QPushButton#actionOrange {{
-    background: #c67c00; color: white; border: none; border-radius: 5px;
+    background: {ORANGE}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
     font-size: 11px; font-weight: bold; padding: 7px 14px;
 }}
 QPushButton#actionOrange:hover {{ background: #e09000; }}
 
 QPushButton#histSmall {{
-    background: {SURFACE}; color: {DIM}; border: none; border-radius: 4px;
+    background: {SURFACE2}; color: {FG_DIM}; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
     font-size: 10px; padding: 4px 8px;
 }}
-QPushButton#histSmall:hover {{ background: {KEY}; color: {FG}; }}
+QPushButton#histSmall:hover {{ background: {KEY_HOV}; color: {FG}; }}
 
 QListWidget {{
     background: {HIST_BG}; color: {FG}; border: 1px solid {SURFACE};
@@ -214,44 +205,93 @@ QListWidget::item {{
     padding: 6px 8px; border-bottom: 1px solid {SURFACE};
 }}
 QListWidget::item:hover    {{ background: {HIST_SEL}; }}
-QListWidget::item:selected {{ background: {KEY}; color: {FG}; }}
+QListWidget::item:selected {{ background: {KEY_BG}; color: {FG}; }}
 
 QFrame#divider {{ background: {SURFACE}; }}
 """
 
 
-# ── Signal bridge ─────────────────────────────────────────────────────────────
-class _Bridge(QObject):
-    status_signal = pyqtSignal(str)
-
-
-# ── Tecla de carácter ─────────────────────────────────────────────────────────
+# ── Character key ─────────────────────────────────────────────────────────────
 class CharKey(QPushButton):
     def __init__(self, lower: str, upper: str, latin: str, parent=None):
         super().__init__(parent)
         self.lower = lower
         self.upper = upper
         self.latin = latin
+        self._pressed = False
         self.setObjectName("charKey")
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
         self.refresh(shift=False)
 
     def refresh(self, shift: bool):
-        self.setText(f"{self.upper if shift else self.lower}\n{self.latin}")
+        self.setText(self.upper if shift else self.lower)
+        self.setToolTip(f"{self.upper if shift else self.lower}  [{self.latin}]")
+        self.update()
+
+    def mousePressEvent(self, event):
+        self._pressed = True
+        self.update()
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        self._pressed = False
+        self.update()
+        super().mouseReleaseEvent(event)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        painter.eraseRect(event.rect())
+
+        is_hovered = self.testAttribute(Qt.WidgetAttribute.WA_Hover)
+        bg_color = KEY_ACT if self._pressed else (KEY_HOV if is_hovered else KEY_BG)
+        painter.fillRect(event.rect(), QColor(bg_color))
+
+        main_text = self.upper if self._shift_state() else self.lower
+        font_main = QFont("Consolas", 0, QFont.Weight.Black)
+        key_h = self.height()
+        fs = max(18, min(28, key_h // 2 - 4))
+        font_main.setPixelSize(fs)
+        painter.setFont(font_main)
+        painter.setPen(QColor(FG if not self._pressed else "#ffffff"))
+        painter.drawText(event.rect(), Qt.AlignmentFlag.AlignCenter, main_text)
+
+        font_h = QFont("Consolas", 0, QFont.Weight.Normal)
+        hs = max(9, min(13, key_h // 6))
+        font_h.setPixelSize(hs)
+        painter.setFont(font_h)
+        painter.setPen(QColor(FG_DIM))
+        r = event.rect()
+        painter.drawText(r.adjusted(0, 0, -4, -3), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom, self.latin)
+        painter.end()
+
+    def _shift_state(self) -> bool:
+        try:
+            return self.window()._shift_active
+        except AttributeError:
+            return False
 
 
-# ── Text area con mapeo de teclado físico ─────────────────────────────────────
+# ── Text area with physical keyboard mapping ───────────────────────────────────
 class RussianTextEdit(QTextEdit):
-    """QTextEdit que intercepta teclas físicas y las convierte a cirílico."""
-
     def __init__(self, get_mapping, parent=None):
         super().__init__(parent)
-        self._get_mapping = get_mapping   # callable → dict activo
+        self._get_mapping = get_mapping
+        self._font_size = 18
+
+    def set_font_size(self, size: int):
+        """✅ Fixed: properly update font without stylesheet interference"""
+        self._font_size = size
+        font = QFont("Consolas", size)  # Create fresh font with desired size
+        font.setPixelSize(size)
+        self.setFont(font)
+        # Optional: force update to ensure rendering
+        self.viewport().update()
 
     def keyPressEvent(self, event: QKeyEvent):
         mods = event.modifiers()
         key  = event.key()
 
-        # Ctrl/Alt shortcuts pasan sin cambio (Ctrl+C, Ctrl+V, etc.)
         if mods & (Qt.KeyboardModifier.ControlModifier |
                    Qt.KeyboardModifier.AltModifier):
             super().keyPressEvent(event)
@@ -263,51 +303,55 @@ class RussianTextEdit(QTextEdit):
             lower, upper = mapping[key]
             self.insertPlainText(upper if shift else lower)
         else:
-            super().keyPressEvent(event)   # backspace, flechas, enter, etc.
+            super().keyPressEvent(event)
 
 
-# ── Ventana principal ─────────────────────────────────────────────────────────
+# ── Main window ────────────────────────────────────────────────────────────────
 class RussianKeyboard(QMainWindow):
+
+    _INITIAL_WIDTH  = 960
+    _INITIAL_HEIGHT = 580
+    _HIST_PANEL_W   = 200
+    _KEY_W          = 52
+    _KEY_H          = 62
+    _KEY_SPACING    = 4
+    _ROW_INDENT     = [0, 18, 36]
+    _KEY_LATIN_SIZE = 10
+    _DEFAULT_FONT_SIZE = 18
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("🇷🇺  Russian Virtual Keyboard")
+        self.setWindowTitle("Russian Keyboard")
+        self.resize(self._INITIAL_WIDTH, self._INITIAL_HEIGHT)
 
-        self._shift_active    = False
-        self._current_layout  = "ЙЦУКЕН"
+        self._shift_active   = False
+        self._current_layout = "ЙЦУКЕН"
         self._char_keys: list[CharKey] = []
-        self._yo_key: CharKey | None   = None
-        self._mapping: dict            = build_mapping(self._current_layout)
-        self._history: list[str]       = []
-
-        self._bridge = _Bridge()
-        self._bridge.status_signal.connect(self._set_status)
+        self._yo_key: CharKey | None = None
+        self._mapping: dict = build_mapping(self._current_layout)
+        self._history: list[str] = []
 
         root = QWidget()
         root.setObjectName("root")
         self.setCentralWidget(root)
 
-        # Layout raíz: teclado (izquierda) | historial (derecha)
         root_h = QHBoxLayout(root)
         root_h.setContentsMargins(0, 0, 0, 0)
         root_h.setSpacing(0)
 
-        # Panel izquierdo
-        left = QWidget()
-        left.setObjectName("root")
-        self._vbox = QVBoxLayout(left)
-        self._vbox.setContentsMargins(16, 14, 16, 6)
-        self._vbox.setSpacing(8)
-        root_h.addWidget(left)
+        self._left_panel = QWidget()
+        self._left_panel.setObjectName("root")
+        self._vbox = QVBoxLayout(self._left_panel)
+        self._vbox.setContentsMargins(16, 12, 16, 6)
+        self._vbox.setSpacing(6)
+        root_h.addWidget(self._left_panel, 1)
 
-        # Divisor
         div = QFrame()
         div.setObjectName("divider")
         div.setFrameShape(QFrame.Shape.VLine)
         div.setFixedWidth(1)
         root_h.addWidget(div)
 
-        # Panel historial (derecha)
         self._hist_panel = self._build_history_panel()
         root_h.addWidget(self._hist_panel)
 
@@ -320,23 +364,39 @@ class RussianKeyboard(QMainWindow):
 
         self.setStyleSheet(QSS)
         self._draw_keyboard()
-        self.setFixedWidth(920)
 
-    # ── Historial ─────────────────────────────────────────────────────────────
+    def _on_font_size_changed(self, size: int):
+        """✅ Fixed: avoid signal recursion and ensure proper update"""
+        # Block signals to prevent recursive calls
+        self._font_slider.blockSignals(True)
+        self._font_spin.blockSignals(True)
+        
+        # Update the other widget if needed
+        if self._font_slider.value() != size:
+            self._font_slider.setValue(size)
+        if self._font_spin.value() != size:
+            self._font_spin.setValue(size)
+        
+        self._font_slider.blockSignals(False)
+        self._font_spin.blockSignals(False)
+        
+        # Apply to text area
+        self._ta.set_font_size(size)
+        self._ta.setFocus()  # Keep focus on editor
 
     def _build_history_panel(self) -> QWidget:
         panel = QWidget()
         panel.setObjectName("root")
-        panel.setFixedWidth(200)
+        panel.setFixedWidth(self._HIST_PANEL_W)
         vbox = QVBoxLayout(panel)
         vbox.setContentsMargins(10, 14, 12, 10)
         vbox.setSpacing(6)
 
-        title = QLabel("📖  Historial")
+        title = QLabel("Historial")
         title.setObjectName("histTitle")
         vbox.addWidget(title)
 
-        hint = QLabel("Clic → cargar al editor")
+        hint = QLabel("Clic para cargar al editor")
         hint.setObjectName("kbHint")
         vbox.addWidget(hint)
 
@@ -345,7 +405,7 @@ class RussianKeyboard(QMainWindow):
         self._hist_list.itemClicked.connect(self._load_from_history)
         vbox.addWidget(self._hist_list)
 
-        clear_hist = QPushButton("🗑  Limpiar historial")
+        clear_hist = QPushButton("Limpiar historial")
         clear_hist.setObjectName("histSmall")
         clear_hist.clicked.connect(self._clear_history)
         vbox.addWidget(clear_hist)
@@ -355,36 +415,34 @@ class RussianKeyboard(QMainWindow):
     def _save_to_history(self):
         text = self._ta.toPlainText().strip()
         if not text:
-            self._set_status("⚠  Nada que guardar")
+            self._set_status("Nada que guardar")
             return
         if text in self._history:
-            self._set_status("ℹ  Ya está en el historial")
+            self._set_status("Ya esta en el historial")
             return
         self._history.insert(0, text)
-        preview = text if len(text) <= 30 else text[:28] + "…"
+        preview = text if len(text) <= 30 else text[:28] + "..."
         item = QListWidgetItem(preview)
-        item.setData(Qt.ItemDataRole.UserRole, text)   # guarda texto completo
+        item.setData(Qt.ItemDataRole.UserRole, text)
         item.setToolTip(text)
         self._hist_list.insertItem(0, item)
-        self._set_status(f"💾  Guardado en historial")
+        self._set_status("Guardado en historial")
 
     def _load_from_history(self, item: QListWidgetItem):
         full_text = item.data(Qt.ItemDataRole.UserRole)
         self._ta.setPlainText(full_text)
         self._ta.setFocus()
-        self._set_status("📖  Frase cargada desde historial")
+        self._set_status("Frase cargada desde historial")
 
     def _clear_history(self):
         self._history.clear()
         self._hist_list.clear()
         self._set_status("Historial limpiado")
 
-    # ── UI sections ───────────────────────────────────────────────────────────
-
     def _build_header(self):
         row = QHBoxLayout()
 
-        title = QLabel("🇷🇺  Russian Virtual Keyboard")
+        title = QLabel("Russian Keyboard")
         title.setObjectName("title")
         row.addWidget(title)
         row.addStretch()
@@ -402,40 +460,56 @@ class RussianKeyboard(QMainWindow):
 
         self._vbox.addLayout(row)
 
-        # Pista del teclado físico
-        kb_hint = QLabel("⌨️  Escribe directo con tu teclado — las teclas Q W E … escriben cirílico automáticamente  •  ` → ё")
+        kb_hint = QLabel("Escribe con tu teclado. Las teclas Q W E... escriben cirílico directamente. ` -> ё")
         kb_hint.setObjectName("kbHint")
         self._vbox.addWidget(kb_hint)
 
     def _build_textarea(self):
         self._ta = RussianTextEdit(lambda: self._mapping)
-        self._ta.setFixedHeight(100)
-        self._ta.setPlaceholderText("Escribe aquí con el teclado virtual o con tu teclado físico…")
-        self._vbox.addWidget(self._ta)
+        self._ta.setPlaceholderText("Escribe aquí...")
+        self._vbox.addWidget(self._ta, 1)
+        # ✅ Initialize with default font size (stylesheet no longer overrides)
+        self._ta.set_font_size(self._DEFAULT_FONT_SIZE)
 
     def _build_actions(self):
         row = QHBoxLayout()
         row.setSpacing(8)
 
-        copy_btn = QPushButton("📋  Copiar")
+        copy_btn = QPushButton("Copiar")
         copy_btn.setObjectName("actionBlue")
         copy_btn.clicked.connect(self._copy)
 
-        save_btn = QPushButton("💾  Guardar")
+        save_btn = QPushButton("Guardar")
         save_btn.setObjectName("actionOrange")
         save_btn.clicked.connect(self._save_to_history)
 
-        type_btn = QPushButton("⌨️  Type to App")
-        type_btn.setObjectName("actionGreen")
-        type_btn.clicked.connect(self._type_app)
-
-        clear_btn = QPushButton("🗑  Limpiar")
+        clear_btn = QPushButton("Limpiar")
         clear_btn.setObjectName("actionRed")
         clear_btn.clicked.connect(self._clear)
 
         row.addWidget(copy_btn)
         row.addWidget(save_btn)
-        row.addWidget(type_btn)
+
+        row.addSpacing(16)
+        fs_label = QLabel("Tamaño:")
+        fs_label.setObjectName("kbHint")
+        row.addWidget(fs_label)
+
+        self._font_slider = QSlider(Qt.Orientation.Horizontal)
+        self._font_slider.setObjectName("histSmall")
+        self._font_slider.setRange(12, 48)  # ✅ Extended range for better flexibility
+        self._font_slider.setValue(self._DEFAULT_FONT_SIZE)
+        self._font_slider.setFixedWidth(140)
+        self._font_slider.valueChanged.connect(self._on_font_size_changed)
+        row.addWidget(self._font_slider)
+
+        self._font_spin = QSpinBox()
+        self._font_spin.setRange(12, 48)  # ✅ Match slider range
+        self._font_spin.setValue(self._DEFAULT_FONT_SIZE)
+        self._font_spin.setFixedWidth(55)
+        self._font_spin.valueChanged.connect(self._on_font_size_changed)
+        row.addWidget(self._font_spin)
+
         row.addStretch()
         row.addWidget(clear_btn)
         self._vbox.addLayout(row)
@@ -444,20 +518,20 @@ class RussianKeyboard(QMainWindow):
         self._kb_widget = QWidget()
         self._kb_layout = QVBoxLayout(self._kb_widget)
         self._kb_layout.setContentsMargins(0, 0, 0, 0)
-        self._kb_layout.setSpacing(4)
-        self._vbox.addWidget(self._kb_widget)
+        self._kb_layout.setSpacing(self._KEY_SPACING)
+        self._vbox.addWidget(self._kb_widget, 1)
 
     def _build_bottom_bar(self):
         row = QHBoxLayout()
-        row.setSpacing(6)
+        row.setSpacing(self._KEY_SPACING)
 
-        self._shift_btn = QPushButton("⇧  Shift")
+        self._shift_btn = QPushButton("Shift")
         self._shift_btn.setObjectName("shiftKey")
         self._shift_btn.setProperty("active", "false")
         self._shift_btn.clicked.connect(self._toggle_shift)
         row.addWidget(self._shift_btn)
 
-        self._yo_key = CharKey("ё", "Ё", "Ё / `")
+        self._yo_key = CharKey("ё", "Ё", "`")
         self._yo_key.clicked.connect(lambda: self._emit_char(self._yo_key))
         row.addWidget(self._yo_key)
 
@@ -466,7 +540,7 @@ class RussianKeyboard(QMainWindow):
         space_btn.clicked.connect(lambda: self._insert_char(" "))
         row.addWidget(space_btn)
 
-        bs_btn = QPushButton("⌫")
+        bs_btn = QPushButton("<=")
         bs_btn.setObjectName("bsKey")
         bs_btn.clicked.connect(self._backspace)
         row.addWidget(bs_btn)
@@ -475,14 +549,10 @@ class RussianKeyboard(QMainWindow):
         self._vbox.addLayout(row)
 
     def _build_status(self):
-        self._status_lbl = QLabel(
-            "Listo  •  haz clic en una tecla o escribe con tu teclado físico"
-        )
+        self._status_lbl = QLabel("Listo")
         self._status_lbl.setObjectName("status")
         self._status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._vbox.addWidget(self._status_lbl)
-
-    # ── Teclado visual ────────────────────────────────────────────────────────
 
     def _draw_keyboard(self):
         while self._kb_layout.count():
@@ -494,9 +564,9 @@ class RussianKeyboard(QMainWindow):
         for ri, row_data in enumerate(LAYOUTS[self._current_layout]):
             row_widget = QWidget()
             row_h = QHBoxLayout(row_widget)
-            indent = ROW_INDENT[ri] if ri < len(ROW_INDENT) else 0
+            indent = self._ROW_INDENT[ri] if ri < len(self._ROW_INDENT) else 0
             row_h.setContentsMargins(indent, 0, 0, 0)
-            row_h.setSpacing(4)
+            row_h.setSpacing(self._KEY_SPACING)
             for lower, upper, latin in row_data:
                 key = CharKey(lower, upper, latin)
                 key.clicked.connect(lambda _, k=key: self._emit_char(k))
@@ -506,8 +576,27 @@ class RussianKeyboard(QMainWindow):
             self._kb_layout.addWidget(row_widget)
 
         self._refresh_all_keys()
+        self._update_key_sizes()
 
-    # ── Shift ─────────────────────────────────────────────────────────────────
+    def _update_key_sizes(self):
+        if not hasattr(self, '_left_panel') or not hasattr(self, '_kb_widget'):
+            return
+        total_keys = len(LAYOUTS[self._current_layout][0])
+        available_w = self._left_panel.width() - 32
+        key_w = max(48, min(80, (available_w - self._ROW_INDENT[-1] - (total_keys - 1) * self._KEY_SPACING) // total_keys))
+        key_h = max(52, min(80, int(self._kb_widget.height() * 0.28)))
+
+        for key in self._char_keys:
+            key.setMinimumSize(key_w, key_h)
+            key.setMaximumSize(key_w, key_h)
+
+        if self._yo_key:
+            self._yo_key.setMinimumSize(key_w, key_h)
+            self._yo_key.setMaximumSize(key_w, key_h)
+
+        if hasattr(self, '_shift_btn') and self._shift_btn:
+            self._shift_btn.setMinimumSize(max(60, int(key_w * 1.5)), key_h)
+            self._shift_btn.setMaximumSize(max(60, int(key_w * 1.5)), key_h)
 
     def _toggle_shift(self):
         self._shift_active = not self._shift_active
@@ -521,8 +610,6 @@ class RussianKeyboard(QMainWindow):
             k.refresh(self._shift_active)
         if self._yo_key:
             self._yo_key.refresh(self._shift_active)
-
-    # ── Interacción con teclas ────────────────────────────────────────────────
 
     def _emit_char(self, key: CharKey):
         self._insert_char(key.upper if self._shift_active else key.lower)
@@ -542,8 +629,6 @@ class RussianKeyboard(QMainWindow):
         self._mapping = build_mapping(name)
         self._draw_keyboard()
 
-    # ── Acciones ──────────────────────────────────────────────────────────────
-
     def _clear(self):
         self._ta.clear()
         self._set_status("Texto limpiado")
@@ -551,39 +636,20 @@ class RussianKeyboard(QMainWindow):
     def _copy(self):
         text = self._ta.toPlainText().strip()
         if not text:
-            self._set_status("⚠  Nada que copiar")
+            self._set_status("Nada que copiar")
             return
         QApplication.clipboard().setText(text)
-        self._set_status(f"✓  Copiado — {len(text)} caracteres en el portapapeles")
-
-    def _type_app(self):
-        if not HAS_PYNPUT:
-            self._set_status("⚠  pynput no instalado — ejecuta: pip install pynput")
-            return
-        text = self._ta.toPlainText().strip()
-        if not text:
-            self._set_status("⚠  Nada que escribir")
-            return
-        self._countdown(3, text)
-
-    def _countdown(self, n: int, text: str):
-        if n > 0:
-            self._set_status(f"⚠  Cambia a la ventana destino — escribiendo en {n}s…")
-            QTimer.singleShot(1000, lambda: self._countdown(n - 1, text))
-        else:
-            self._set_status("⌨️  Escribiendo…")
-            def _do():
-                _kb.type(text)
-                self._bridge.status_signal.emit(
-                    f"✓  Escritos {len(text)} caracteres en la ventana activa"
-                )
-            threading.Thread(target=_do, daemon=True).start()
+        self._set_status(f"Copiado - {len(text)} caracteres")
 
     def _set_status(self, msg: str):
         self._status_lbl.setText(msg)
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        QTimer.singleShot(0, self._update_key_sizes)
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+
+# ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
