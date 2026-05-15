@@ -45,3 +45,12 @@ def build_mapping(layout_name: str) -> dict[Qt.Key, tuple[str, str]]:
             mapping[qt_key] = (lower, upper)
     mapping[Qt.Key.Key_QuoteLeft] = ("ё", "Ё")
     return mapping
+
+
+def build_american_mapping(layout_name: str) -> dict[Qt.Key, tuple[str, str]]:
+    mapping: dict[Qt.Key, tuple[str, str]] = {}
+    for qt_row, layout_row in zip(QWERTY_ROWS, LAYOUTS[layout_name]):
+        for qt_key, (_, _, latin) in zip(qt_row, layout_row):
+            mapping[qt_key] = (latin.lower(), latin.upper())
+    mapping[Qt.Key.Key_QuoteLeft] = ("`", "~")
+    return mapping

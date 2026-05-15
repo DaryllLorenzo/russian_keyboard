@@ -16,6 +16,7 @@ from russian_keyboard.widgets import CharKey, RussianTextEdit
 
 class KeyboardTab(QWidget):
     layout_changed = pyqtSignal(str)
+    american_mode_changed = pyqtSignal(bool)
 
     _KEY_W          = 45
     _KEY_H          = 52
@@ -30,6 +31,7 @@ class KeyboardTab(QWidget):
         self._mapping_provider = mapping_provider
         self._shift_active   = False
         self._current_layout = "ЙЦУКЕН"
+        self._american_mode  = False
         self._char_keys: list[CharKey] = []
         self._yo_key: CharKey | None = None
         self._history: list[str] = []
@@ -42,6 +44,16 @@ class KeyboardTab(QWidget):
         self._shift_btn.setProperty("active", "true" if active else "false")
         self._shift_btn.style().unpolish(self._shift_btn)
         self._shift_btn.style().polish(self._shift_btn)
+        self._refresh_all_keys()
+
+    def set_american_mode(self, enabled: bool):
+        self._american_mode = enabled
+        self._american_btn.setChecked(enabled)
+        self._kb_hint.setText(
+            "Modo US: teclado f\u00edsico escribe directamente en QWERTY"
+            if enabled
+            else "Escribe con teclado f\u00edsico. Q W E... \u2192 cir\u00edlico. ` \u2192 \u0451"
+        )
         self._refresh_all_keys()
 
     def set_layout(self, name: str):
@@ -131,11 +143,18 @@ class KeyboardTab(QWidget):
             row.addWidget(rb)
             row.addSpacing(6)
 
+        self._american_btn = QPushButton("US")
+        self._american_btn.setObjectName("actionBlue")
+        self._american_btn.setCheckable(True)
+        self._american_btn.setFixedWidth(40)
+        self._american_btn.clicked.connect(self._toggle_american)
+        row.addWidget(self._american_btn)
+
         self._vbox.addLayout(row)
 
-        kb_hint = QLabel("Escribe con teclado físico. Q W E... → cirílico. ` → ё")
-        kb_hint.setObjectName("kbHint")
-        self._vbox.addWidget(kb_hint)
+        self._kb_hint = QLabel("Escribe con teclado f\u00edsico. Q W E... \u2192 cir\u00edlico. ` \u2192 \u0451")
+        self._kb_hint.setObjectName("kbHint")
+        self._vbox.addWidget(self._kb_hint)
 
     def _on_layout_selected(self, name: str):
         self._current_layout = name
@@ -309,11 +328,24 @@ class KeyboardTab(QWidget):
     def _toggle_shift(self):
         self.set_shift(not self._shift_active)
 
+    def _toggle_american(self):
+        enabled = not self._american_mode
+        self.set_american_mode(enabled)
+        self.american_mode_changed.emit(enabled)
+
+    def _apply_american_mode(self):
+        for k in self._char_keys:
+            k.set_american_mode(self._american_mode)
+        if self._yo_key:
+            self._yo_key.set_american_mode(self._american_mode)
+
     def _refresh_all_keys(self):
         for k in self._char_keys:
             k.set_shift(self._shift_active)
+            k.set_american_mode(self._american_mode)
         if self._yo_key:
             self._yo_key.set_shift(self._shift_active)
+            self._yo_key.set_american_mode(self._american_mode)
 
     def _insert_char(self, char: str):
         self._ta.insertPlainText(char)

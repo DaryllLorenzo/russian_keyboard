@@ -19,6 +19,7 @@ class CharKey(QPushButton):
         self.latin = latin
         self._pressed = False
         self._shift_state = False
+        self._american_mode = False
         self.setObjectName("charKey")
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
         self.refresh()
@@ -27,15 +28,26 @@ class CharKey(QPushButton):
         self._shift_state = active
         self.refresh()
 
+    def set_american_mode(self, enabled: bool):
+        self._american_mode = enabled
+        self.refresh()
+
     def refresh(self):
-        self.setText(self.upper if self._shift_state else self.lower)
-        self.setToolTip(f"{self.upper if self._shift_state else self.lower}  [{self.latin}]")
+        if self._american_mode:
+            self.setText(self.latin.upper() if self._shift_state else self.latin.lower())
+            self.setToolTip(f"{self.latin.upper() if self._shift_state else self.latin.lower()}")
+        else:
+            self.setText(self.upper if self._shift_state else self.lower)
+            self.setToolTip(f"{self.upper if self._shift_state else self.lower}  [{self.latin}]")
         self.update()
 
     def mousePressEvent(self, event):
         self._pressed = True
         self.update()
-        char = self.upper if self._shift_state else self.lower
+        if self._american_mode:
+            char = self.latin.upper() if self._shift_state else self.latin.lower()
+        else:
+            char = self.upper if self._shift_state else self.lower
         self.char_clicked.emit(char)
         super().mousePressEvent(event)
 
@@ -53,7 +65,10 @@ class CharKey(QPushButton):
         bg_color = KEY_ACT if self._pressed else (KEY_HOV if is_hovered else KEY_BG)
         painter.fillRect(event.rect(), QColor(bg_color))
 
-        main_text = self.upper if self._shift_state else self.lower
+        if self._american_mode:
+            main_text = self.latin.upper() if self._shift_state else self.latin.lower()
+        else:
+            main_text = self.upper if self._shift_state else self.lower
         font_main = QFont("Consolas", 0, QFont.Weight.Black)
         key_h = self.height()
         fs = max(14, min(22, key_h // 2 - 4))
@@ -68,7 +83,8 @@ class CharKey(QPushButton):
         painter.setFont(font_h)
         painter.setPen(QColor(FG_DIM))
         r = event.rect()
-        painter.drawText(r.adjusted(0, 0, -3, -2), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom, self.latin)
+        hint = (self.upper if self._shift_state else self.lower) if self._american_mode else self.latin
+        painter.drawText(r.adjusted(0, 0, -3, -2), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom, hint)
         painter.end()
 
 
