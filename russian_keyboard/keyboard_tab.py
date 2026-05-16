@@ -11,6 +11,7 @@ from russian_keyboard.constants import (
     HIST_BG, HIST_SEL,
 )
 from russian_keyboard.keyboard import LAYOUTS
+from russian_keyboard.translations import tr
 from russian_keyboard.widgets import CharKey, RussianTextEdit
 
 
@@ -49,11 +50,7 @@ class KeyboardTab(QWidget):
     def set_american_mode(self, enabled: bool):
         self._american_mode = enabled
         self._american_btn.setChecked(enabled)
-        self._kb_hint.setText(
-            "Modo US: teclado f\u00edsico escribe directamente en QWERTY"
-            if enabled
-            else "Escribe con teclado f\u00edsico. Q W E... \u2192 cir\u00edlico. ` \u2192 \u0451"
-        )
+        self._kb_hint.setText(tr("kb_hint_american") if enabled else tr("kb_hint_normal"))
         self._refresh_all_keys()
 
     def set_layout(self, name: str):
@@ -103,23 +100,23 @@ class KeyboardTab(QWidget):
         vbox.setContentsMargins(8, 10, 8, 8)
         vbox.setSpacing(5)
 
-        title = QLabel("Historial")
-        title.setObjectName("histTitle")
-        vbox.addWidget(title)
+        self._hist_title = QLabel(tr("hist_title"))
+        self._hist_title.setObjectName("histTitle")
+        vbox.addWidget(self._hist_title)
 
-        hint = QLabel("Clic para cargar")
-        hint.setObjectName("kbHint")
-        vbox.addWidget(hint)
+        self._hist_hint = QLabel(tr("hist_hint"))
+        self._hist_hint.setObjectName("kbHint")
+        vbox.addWidget(self._hist_hint)
 
         self._hist_list = QListWidget()
         self._hist_list.setWordWrap(True)
         self._hist_list.itemClicked.connect(self._load_from_history)
         vbox.addWidget(self._hist_list)
 
-        clear_hist = QPushButton("Limpiar")
-        clear_hist.setObjectName("histSmall")
-        clear_hist.clicked.connect(self._clear_history)
-        vbox.addWidget(clear_hist)
+        self._hist_clear = QPushButton(tr("hist_clear"))
+        self._hist_clear.setObjectName("histSmall")
+        self._hist_clear.clicked.connect(self._clear_history)
+        vbox.addWidget(self._hist_clear)
 
         return panel
 
@@ -127,12 +124,13 @@ class KeyboardTab(QWidget):
         row = QHBoxLayout()
         row.setSpacing(8)
 
-        title = QLabel("Russian Keyboard")
-        title.setObjectName("title")
-        row.addWidget(title)
+        self._title_lbl = QLabel(tr("title_keyboard"))
+        self._title_lbl.setObjectName("title")
+        row.addWidget(self._title_lbl)
         row.addStretch()
 
         self._layout_group = QButtonGroup(self)
+        self._layout_rbs = []
         for name in LAYOUTS:
             rb = QRadioButton(name)
             rb.setChecked(name == self._current_layout)
@@ -140,10 +138,11 @@ class KeyboardTab(QWidget):
                 lambda checked, n=name: self._on_layout_selected(n) if checked else None
             )
             self._layout_group.addButton(rb)
+            self._layout_rbs.append(rb)
             row.addWidget(rb)
             row.addSpacing(6)
 
-        self._american_btn = QPushButton("US")
+        self._american_btn = QPushButton(tr("btn_us"))
         self._american_btn.setObjectName("actionBlue")
         self._american_btn.setCheckable(True)
         self._american_btn.setFixedWidth(40)
@@ -152,7 +151,7 @@ class KeyboardTab(QWidget):
 
         self._vbox.addLayout(row)
 
-        self._kb_hint = QLabel("Escribe con teclado f\u00edsico. Q W E... \u2192 cir\u00edlico. ` \u2192 \u0451")
+        self._kb_hint = QLabel(tr("kb_hint_normal"))
         self._kb_hint.setObjectName("kbHint")
         self._vbox.addWidget(self._kb_hint)
 
@@ -163,7 +162,7 @@ class KeyboardTab(QWidget):
 
     def _build_textarea(self):
         self._ta = RussianTextEdit(self._mapping_provider)
-        self._ta.setPlaceholderText("Escribe aquí...")
+        self._ta.setPlaceholderText(tr("ta_placeholder"))
         self._vbox.addWidget(self._ta, 1)
         self._ta.set_font_size(self._DEFAULT_FONT_SIZE)
 
@@ -171,25 +170,25 @@ class KeyboardTab(QWidget):
         row = QHBoxLayout()
         row.setSpacing(6)
 
-        copy_btn = QPushButton("Copiar")
-        copy_btn.setObjectName("actionBlue")
-        copy_btn.clicked.connect(self._copy)
+        self._copy_btn = QPushButton(tr("btn_copy"))
+        self._copy_btn.setObjectName("actionBlue")
+        self._copy_btn.clicked.connect(self._copy)
 
-        save_btn = QPushButton("Guardar")
-        save_btn.setObjectName("actionOrange")
-        save_btn.clicked.connect(self._save_to_history)
+        self._save_btn = QPushButton(tr("btn_save"))
+        self._save_btn.setObjectName("actionOrange")
+        self._save_btn.clicked.connect(self._save_to_history)
 
-        clear_btn = QPushButton("Limpiar")
-        clear_btn.setObjectName("actionRed")
-        clear_btn.clicked.connect(self._clear)
+        self._clear_btn = QPushButton(tr("btn_clear"))
+        self._clear_btn.setObjectName("actionRed")
+        self._clear_btn.clicked.connect(self._clear)
 
-        row.addWidget(copy_btn)
-        row.addWidget(save_btn)
+        row.addWidget(self._copy_btn)
+        row.addWidget(self._save_btn)
 
         row.addSpacing(12)
-        fs_label = QLabel("Tamaño:")
-        fs_label.setObjectName("kbHint")
-        row.addWidget(fs_label)
+        self._fs_label = QLabel(tr("font_size"))
+        self._fs_label.setObjectName("kbHint")
+        row.addWidget(self._fs_label)
 
         self._font_slider = QSlider(Qt.Orientation.Horizontal)
         self._font_slider.setObjectName("histSmall")
@@ -207,7 +206,7 @@ class KeyboardTab(QWidget):
         row.addWidget(self._font_spin)
 
         row.addStretch()
-        row.addWidget(clear_btn)
+        row.addWidget(self._clear_btn)
         self._vbox.addLayout(row)
 
     def _build_keyboard_area(self):
@@ -223,7 +222,7 @@ class KeyboardTab(QWidget):
 
         row.addStretch()
 
-        self._shift_btn = QPushButton("⇧ Shift")
+        self._shift_btn = QPushButton(tr("btn_shift"))
         self._shift_btn.setObjectName("shiftKey")
         self._shift_btn.setProperty("active", "false")
         self._shift_btn.clicked.connect(self._toggle_shift)
@@ -237,7 +236,7 @@ class KeyboardTab(QWidget):
 
         row.addSpacing(3)
 
-        self._space_btn = QPushButton("⎵ Пробел")
+        self._space_btn = QPushButton(tr("btn_space"))
         self._space_btn.setObjectName("wideKey")
         self._space_btn.setFixedHeight(self._KEY_H)
         self._space_btn.setMinimumWidth(180)
@@ -246,11 +245,11 @@ class KeyboardTab(QWidget):
 
         row.addSpacing(3)
 
-        self._bs_btn = QPushButton("⌫")
+        self._bs_btn = QPushButton(tr("btn_backspace"))
         self._bs_btn.setObjectName("bsKey")
         self._bs_btn.setFixedHeight(self._KEY_H)
         self._bs_btn.setMinimumWidth(55)
-        self._bs_btn.setToolTip("Borrar")
+        self._bs_btn.setToolTip(tr("tooltip_backspace"))
         self._bs_btn.clicked.connect(self._backspace)
         row.addWidget(self._bs_btn)
 
@@ -258,7 +257,7 @@ class KeyboardTab(QWidget):
         self._vbox.addLayout(row)
 
     def _build_status(self):
-        self._status_lbl = QLabel("Listo")
+        self._status_lbl = QLabel(tr("status_ready"))
         self._status_lbl.setObjectName("status")
         self._status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._vbox.addWidget(self._status_lbl)
@@ -357,23 +356,23 @@ class KeyboardTab(QWidget):
 
     def _clear(self):
         self._ta.clear()
-        self._set_status("Texto limpiado")
+        self._set_status(tr("status_cleared"))
 
     def _copy(self):
         text = self._ta.toPlainText().strip()
         if not text:
-            self._set_status("Nada que copiar")
+            self._set_status(tr("status_nothing_copy"))
             return
         QApplication.clipboard().setText(text)
-        self._set_status(f"Copiado - {len(text)} caracteres")
+        self._set_status(tr("status_copied", n=len(text)))
 
     def _save_to_history(self):
         text = self._ta.toPlainText().strip()
         if not text:
-            self._set_status("Nada que guardar")
+            self._set_status(tr("status_nothing_save"))
             return
         if text in self._history:
-            self._set_status("Ya esta en el historial")
+            self._set_status(tr("status_already_history"))
             return
         self._history.insert(0, text)
         preview = text if len(text) <= 30 else text[:28] + "..."
@@ -381,18 +380,18 @@ class KeyboardTab(QWidget):
         item.setData(Qt.ItemDataRole.UserRole, text)
         item.setToolTip(text)
         self._hist_list.insertItem(0, item)
-        self._set_status("Guardado en historial")
+        self._set_status(tr("status_saved"))
 
     def _load_from_history(self, item: QListWidgetItem):
         full_text = item.data(Qt.ItemDataRole.UserRole)
         self._ta.setPlainText(full_text)
         self._ta.setFocus()
-        self._set_status("Frase cargada desde historial")
+        self._set_status(tr("status_loaded"))
 
     def _clear_history(self):
         self._history.clear()
         self._hist_list.clear()
-        self._set_status("Historial limpiado")
+        self._set_status(tr("status_history_cleared"))
 
     def _on_font_size_changed(self, size: int):
         self._font_slider.blockSignals(True)
@@ -411,6 +410,24 @@ class KeyboardTab(QWidget):
 
     def _set_status(self, msg: str):
         self._status_lbl.setText(msg)
+
+    def retranslate_ui(self):
+        self._title_lbl.setText(tr("title_keyboard"))
+        self._kb_hint.setText(tr("kb_hint_american") if self._american_mode else tr("kb_hint_normal"))
+        self._ta.setPlaceholderText(tr("ta_placeholder"))
+        self._copy_btn.setText(tr("btn_copy"))
+        self._save_btn.setText(tr("btn_save"))
+        self._clear_btn.setText(tr("btn_clear"))
+        self._fs_label.setText(tr("font_size"))
+        self._american_btn.setText(tr("btn_us"))
+        self._shift_btn.setText(tr("btn_shift"))
+        self._space_btn.setText(tr("btn_space"))
+        self._bs_btn.setText(tr("btn_backspace"))
+        self._bs_btn.setToolTip(tr("tooltip_backspace"))
+        self._status_lbl.setText(tr("status_ready"))
+        self._hist_title.setText(tr("hist_title"))
+        self._hist_hint.setText(tr("hist_hint"))
+        self._hist_clear.setText(tr("hist_clear"))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

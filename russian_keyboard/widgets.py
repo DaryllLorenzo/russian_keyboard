@@ -7,6 +7,7 @@ from russian_keyboard.constants import (
     FG, FG_DIM, AREA_BG, GREEN, RED, ERROR_BG,
     QWERTY_TO_CYRILLIC, QWERTY_TO_CYRILLIC_SHIFT,
 )
+from russian_keyboard.translations import tr
 
 
 class CharKey(QPushButton):
@@ -127,9 +128,12 @@ class TypingLine(QTextEdit):
         super().__init__(parent)
         self.target_text = ""
         self.current_pos = 0
-        self.setPlaceholderText("Type the word here...")
+        self.setPlaceholderText(tr("trainer_placeholder"))
         self.setMaximumHeight(70)
         self._shift_pressed = False
+
+    def set_placeholder_text(self, text: str):
+        self.setPlaceholderText(text)
 
     def set_target(self, text: str):
         self.target_text = text

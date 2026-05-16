@@ -1,9 +1,11 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QHBoxLayout, QVBoxLayout, QPushButton
 
 from russian_keyboard.constants import QSS
 from russian_keyboard.keyboard import build_mapping, build_american_mapping
 from russian_keyboard.keyboard_tab import KeyboardTab
 from russian_keyboard.trainer_tab import RussianTypingTrainerWidget
+from russian_keyboard.translations import tr, set_language
 
 
 class RussianKeyboard(QMainWindow):
@@ -12,7 +14,7 @@ class RussianKeyboard(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Russian Keyboard")
+        self.setWindowTitle(tr("app_title"))
 
         screen = QApplication.primaryScreen()
         screen_geometry = screen.availableGeometry()
@@ -30,19 +32,69 @@ class RussianKeyboard(QMainWindow):
         self._american_mode = False
         self._rebuild_mapping()
 
+        central = QWidget()
+        self.setCentralWidget(central)
+        main_layout = QVBoxLayout(central)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        header = QWidget()
+        header.setObjectName("root")
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(4, 4, 4, 0)
+
+        es_btn = QPushButton("ES")
+        es_btn.setObjectName("langBtn")
+        es_btn.setFixedWidth(36)
+        es_btn.setCheckable(True)
+        es_btn.setChecked(True)
+        es_btn.clicked.connect(lambda: self._switch_language("es", es_btn, en_btn))
+
+        en_btn = QPushButton("EN")
+        en_btn.setObjectName("langBtn")
+        en_btn.setFixedWidth(36)
+        en_btn.setCheckable(True)
+        en_btn.clicked.connect(lambda: self._switch_language("en", en_btn, es_btn))
+
+        header_layout.addStretch()
+        header_layout.addWidget(es_btn)
+        header_layout.addWidget(en_btn)
+        main_layout.addWidget(header)
+
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
-        self.setCentralWidget(self.tabs)
+        main_layout.addWidget(self.tabs)
 
         self.keyboard_tab = KeyboardTab(mapping_provider=lambda: self._mapping)
         self.keyboard_tab.layout_changed.connect(self._on_layout_changed)
         self.keyboard_tab.american_mode_changed.connect(self._on_american_mode_changed)
-        self.tabs.addTab(self.keyboard_tab, "Keyboard")
+        self.tabs.addTab(self.keyboard_tab, tr("tab_keyboard"))
 
         self.trainer_widget = RussianTypingTrainerWidget()
-        self.tabs.addTab(self.trainer_widget, "Training")
+        self.tabs.addTab(self.trainer_widget, tr("tab_training"))
 
-        self.setStyleSheet(QSS)
+        self.setStyleSheet(QSS + """
+            QPushButton#langBtn {
+                background: #3c3c3c; color: #b0b0b0; border: 1px solid #484848;
+                border-radius: 4px; font-size: 12px; font-weight: bold; padding: 4px;
+            }
+            QPushButton#langBtn:checked {
+                background: #e94560; color: white; border-color: #e94560;
+            }
+            QPushButton#langBtn:hover:!checked {
+                background: #4a4a4a; color: #e8e8e8;
+            }
+        """)
+
+    def _switch_language(self, lang: str, active_btn, other_btn):
+        set_language(lang)
+        active_btn.setChecked(True)
+        other_btn.setChecked(False)
+        self.setWindowTitle(tr("app_title"))
+        self.tabs.setTabText(0, tr("tab_keyboard"))
+        self.tabs.setTabText(1, tr("tab_training"))
+        self.keyboard_tab.retranslate_ui()
+        self.trainer_widget.retranslate_ui()
 
     def _rebuild_mapping(self):
         if self._american_mode:

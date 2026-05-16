@@ -11,6 +11,7 @@ from russian_keyboard.constants import (
     VOCABULARY,
 )
 from russian_keyboard.keyboard import LAYOUTS, ROW_INDENT, KEY_SPACING
+from russian_keyboard.translations import tr
 from russian_keyboard.widgets import CharKey, TypingLine
 from russian_keyboard.trainer_session import TrainingSession
 
@@ -42,9 +43,9 @@ class RussianTypingTrainerWidget(QWidget):
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(8)
 
-        title = QLabel("Russian Typing Trainer")
-        title.setObjectName("title")
-        left_layout.addWidget(title)
+        self._trainer_title = QLabel(tr("title_trainer"))
+        self._trainer_title.setObjectName("title")
+        left_layout.addWidget(self._trainer_title)
 
         self.word_display = QLabel()
         self.word_display.setObjectName("currentWord")
@@ -79,12 +80,12 @@ class RussianTypingTrainerWidget(QWidget):
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(6)
 
-        self.new_session_btn = QPushButton("New Session")
+        self.new_session_btn = QPushButton(tr("trainer_new_session"))
         self.new_session_btn.setObjectName("actionGreen")
         self.new_session_btn.clicked.connect(self.start_new_session)
         btn_layout.addWidget(self.new_session_btn)
 
-        self.reset_btn = QPushButton("Reset Word")
+        self.reset_btn = QPushButton(tr("trainer_reset_word"))
         self.reset_btn.setObjectName("actionOrange")
         self.reset_btn.clicked.connect(self.reset_current_word)
         btn_layout.addWidget(self.reset_btn)
@@ -103,9 +104,9 @@ class RussianTypingTrainerWidget(QWidget):
         stats_layout = QVBoxLayout(stats_frame)
         stats_layout.setSpacing(4)
 
-        stats_title = QLabel("Statistics")
-        stats_title.setObjectName("statsTitle")
-        stats_layout.addWidget(stats_title)
+        self._stats_title = QLabel(tr("trainer_stats_title"))
+        self._stats_title.setObjectName("statsTitle")
+        stats_layout.addWidget(self._stats_title)
 
         self.correct_count_label = QLabel("Correct: 0")
         self.correct_count_label.setObjectName("statsText")
@@ -125,9 +126,9 @@ class RussianTypingTrainerWidget(QWidget):
 
         right_layout.addWidget(stats_frame)
 
-        mistakes_title = QLabel("Words to Review")
-        mistakes_title.setObjectName("mistakesTitle")
-        right_layout.addWidget(mistakes_title)
+        self._mistakes_title = QLabel(tr("trainer_review_title"))
+        self._mistakes_title.setObjectName("mistakesTitle")
+        right_layout.addWidget(self._mistakes_title)
 
         self.mistakes_list = QListWidget()
         self.mistakes_list.setObjectName("mistakesList")
@@ -141,12 +142,12 @@ class RussianTypingTrainerWidget(QWidget):
         kb_layout.setSpacing(5)
 
         kb_header = QHBoxLayout()
-        kb_title = QLabel("Virtual Keyboard")
-        kb_title.setObjectName("kbTitle")
-        kb_header.addWidget(kb_title)
+        self._kb_title = QLabel(tr("trainer_kb_title"))
+        self._kb_title.setObjectName("kbTitle")
+        kb_header.addWidget(self._kb_title)
         kb_header.addStretch()
 
-        self.vk_shift_btn = QPushButton("⇧ Shift")
+        self.vk_shift_btn = QPushButton(tr("btn_shift"))
         self.vk_shift_btn.setObjectName("shiftKey")
         self.vk_shift_btn.setFixedWidth(70)
         self.vk_shift_btn.clicked.connect(self.toggle_vk_shift)
@@ -165,13 +166,13 @@ class RussianTypingTrainerWidget(QWidget):
         bottom_row = QHBoxLayout()
         bottom_row.addStretch()
 
-        self.space_btn = QPushButton("⎵ Space")
+        self.space_btn = QPushButton(tr("btn_space"))
         self.space_btn.setObjectName("wideKey")
         self.space_btn.setFixedWidth(160)
         self.space_btn.clicked.connect(lambda: self.typing_area.insert_char(" "))
         bottom_row.addWidget(self.space_btn)
 
-        self.backspace_btn = QPushButton("⌫")
+        self.backspace_btn = QPushButton(tr("btn_backspace"))
         self.backspace_btn.setObjectName("bsKey")
         self.backspace_btn.setFixedWidth(80)
         self.backspace_btn.clicked.connect(self.simulate_backspace)
@@ -460,6 +461,20 @@ class RussianTypingTrainerWidget(QWidget):
                 self.typing_area.current_pos -= 1
                 self.typing_area.update_highlighting()
 
+    def retranslate_ui(self):
+        self._trainer_title.setText(tr("title_trainer"))
+        self.new_session_btn.setText(tr("trainer_new_session"))
+        self.reset_btn.setText(tr("trainer_reset_word"))
+        self._stats_title.setText(tr("trainer_stats_title"))
+        self._mistakes_title.setText(tr("trainer_review_title"))
+        self._kb_title.setText(tr("trainer_kb_title"))
+        self.vk_shift_btn.setText(tr("btn_shift"))
+        self.space_btn.setText(tr("btn_space"))
+        self.backspace_btn.setText(tr("btn_backspace"))
+        self.typing_area.set_placeholder_text(tr("trainer_placeholder"))
+        self.update_stats_display()
+        self.update_progress()
+
     def start_new_session(self):
         self.session.generate_session()
         self.update_stats_display()
@@ -483,13 +498,13 @@ class RussianTypingTrainerWidget(QWidget):
         completed, total = self.session.get_progress()
         progress_percent = (completed / total) * 100 if total > 0 else 0
         self.progress_bar.setValue(int(progress_percent))
-        self.progress_label.setText(f"{completed}/{total} words")
+        self.progress_label.setText(tr("trainer_progress", n=completed, total=total))
 
     def update_stats_display(self):
-        self.correct_count_label.setText(f"Correct: {self.session.correct_count}")
-        self.total_count_label.setText(f"Total: {self.session.words_per_session}")
-        self.score_label.setText(f"Score: {self.session.get_score():.0f}%")
-        self.error_count_label.setText(f"Mistakes: {len(self.session.mistakes)}")
+        self.correct_count_label.setText(tr("trainer_correct", n=self.session.correct_count))
+        self.total_count_label.setText(tr("trainer_total", n=self.session.words_per_session))
+        self.score_label.setText(tr("trainer_score", n=self.session.get_score()))
+        self.error_count_label.setText(tr("trainer_mistakes", n=len(self.session.mistakes)))
 
         self.mistakes_list.clear()
         for word, meaning in self.session.mistakes:
@@ -507,7 +522,7 @@ class RussianTypingTrainerWidget(QWidget):
             self.load_current_word()
 
     def on_error(self):
-        self.error_label.setText("Wrong character! Delete and try again.")
+        self.error_label.setText(tr("trainer_error_wrong"))
         self.error_timer.start(2000)
 
         original_style = self.typing_area.styleSheet()
@@ -522,7 +537,7 @@ class RussianTypingTrainerWidget(QWidget):
         if current:
             self.typing_area.set_target(current[0])
             self.typing_area.setFocus()
-            self.error_label.setText("Word reset - try again!")
+            self.error_label.setText(tr("trainer_error_reset"))
             self.error_label.setStyleSheet(f"color: {BLUE};")
             QTimer.singleShot(2000, self.clear_error_indicator)
 
@@ -530,8 +545,8 @@ class RussianTypingTrainerWidget(QWidget):
         word, meaning = item.data(Qt.ItemDataRole.UserRole)
         reply = QMessageBox.question(
             self,
-            "Practice Word",
-            f"Practice: {word} - {meaning}",
+            tr("trainer_dialog_practice_title"),
+            tr("trainer_dialog_practice_body", word=word, meaning=meaning),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
@@ -546,19 +561,19 @@ class RussianTypingTrainerWidget(QWidget):
         score = self.session.get_score()
         mistakes_count = len(self.session.mistakes)
 
-        message = f"Session Complete!\n\nScore: {score:.0f}%\nCorrect: {self.session.correct_count}/{self.session.words_per_session}"
+        message = tr("trainer_complete_body", score=score, correct=self.session.correct_count, total=self.session.words_per_session)
 
         if mistakes_count > 0:
-            message += f"\n\nWords to review: {mistakes_count}"
+            message += tr("trainer_review_count", n=mistakes_count)
             icon = QMessageBox.Icon.Warning
         else:
-            message += f"\n\nPerfect! No mistakes!"
+            message += tr("trainer_perfect")
             icon = QMessageBox.Icon.Information
 
         reply = QMessageBox.question(
             self,
-            "Training Complete",
-            message + "\n\nStart a new session?",
+            tr("trainer_complete_title"),
+            message + tr("trainer_new_session_prompt"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             icon=icon
         )
