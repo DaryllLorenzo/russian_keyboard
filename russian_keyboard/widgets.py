@@ -71,14 +71,14 @@ class CharKey(QPushButton):
             main_text = self.upper if self._shift_state else self.lower
         font_main = QFont("Consolas", 0, QFont.Weight.Black)
         key_h = self.height()
-        fs = max(14, min(22, key_h // 2 - 4))
+        fs = max(16, min(28, key_h // 2 - 2))
         font_main.setPixelSize(fs)
         painter.setFont(font_main)
         painter.setPen(QColor(FG if not self._pressed else "#ffffff"))
         painter.drawText(event.rect(), Qt.AlignmentFlag.AlignCenter, main_text)
 
         font_h = QFont("Consolas", 0, QFont.Weight.Normal)
-        hs = max(7, min(10, key_h // 6))
+        hs = max(8, min(12, key_h // 5))
         font_h.setPixelSize(hs)
         painter.setFont(font_h)
         painter.setPen(QColor(FG_DIM))

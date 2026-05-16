@@ -7,7 +7,7 @@ KEY_BG   = "#3c3c3c"
 KEY_HOV  = "#4a4a4a"
 KEY_ACT  = "#e94560"
 FG       = "#e8e8e8"
-FG_DIM   = "#909090"
+FG_DIM   = "#b0b0b0"
 AREA_BG  = "#141414"
 GREEN    = "#2ecc71"
 RED_BTN  = "#c0392b"
@@ -83,7 +83,7 @@ QTabBar::tab {{
     border-top-left-radius: 4px; border-top-right-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
     font-weight: bold;
-    font-size: 12px;
+    font-size: 13px;
 }}
 QTabBar::tab:selected {{
     background: {KEY_ACT}; color: white;
@@ -100,26 +100,26 @@ QTextEdit {{
     selection-background-color: {KEY_ACT};
 }}
 QLabel#status {{
-    color: {FG_DIM}; font-size: 10px; padding: 2px 0 4px 0;
+    color: {FG_DIM}; font-size: 13px; padding: 2px 0 4px 0;
 }}
 QLabel#title {{
-    color: {FG}; font-size: 18px; font-weight: 800;
+    color: {FG}; font-size: 20px; font-weight: 800;
     font-family: Consolas, "Courier New", monospace;
 }}
 QLabel#histTitle {{
-    color: {FG}; font-size: 16px; font-weight: 700;
+    color: {FG}; font-size: 18px; font-weight: 700;
     font-family: Consolas, "Courier New", monospace;
     padding: 4px 0 2px 0;
 }}
 QLabel#kbHint {{
-    color: {FG_DIM}; font-size: 9px;
+    color: {FG_DIM}; font-size: 13px;
     font-family: Consolas, "Courier New", monospace;
     padding: 0 0 2px 0;
 }}
 QRadioButton {{
     color: {FG};
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px; spacing: 5px;
+    font-size: 14px; spacing: 6px;
 }}
 QRadioButton::indicator {{
     width: 12px; height: 12px; border-radius: 6px;
@@ -137,7 +137,7 @@ QPushButton#wideKey {{
     background: {SURFACE2}; color: {FG}; border: 1px solid #484848;
     border-radius: 5px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 11px; font-weight: 600;
+    font-size: 13px; font-weight: 600;
     letter-spacing: 1px;
 }}
 QPushButton#wideKey:hover   {{ background: {KEY_HOV}; color: white; border-color: #606060; }}
@@ -146,7 +146,7 @@ QPushButton#wideKey:pressed {{ background: {KEY_ACT}; color: white; border-color
 QPushButton#bsKey {{
     background: #4a2020; color: #ff8080; border: 1px solid #6a3030;
     border-radius: 5px;
-    font-size: 16px; font-weight: bold;
+    font-size: 18px; font-weight: bold;
 }}
 QPushButton#bsKey:hover   {{ background: #5c2828; color: #ffaaaa; border-color: #884040; }}
 QPushButton#bsKey:pressed {{ background: {KEY_ACT}; color: white; border-color: {KEY_ACT}; }}
@@ -154,7 +154,7 @@ QPushButton#bsKey:pressed {{ background: {KEY_ACT}; color: white; border-color: 
 QPushButton#shiftKey {{
     background: {BLUE_BTN}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 11px; font-weight: bold;
+    font-size: 13px; font-weight: bold;
 }}
 QPushButton#shiftKey:hover {{ background: #3498db; }}
 QPushButton#shiftKey:pressed {{ background: #217dbb; }}
@@ -165,35 +165,35 @@ QPushButton#shiftKey[active="true"] {{
 QPushButton#actionGreen {{
     background: {GREEN}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px; font-weight: bold; padding: 5px 12px;
+    font-size: 12px; font-weight: bold; padding: 6px 14px;
 }}
 QPushButton#actionGreen:hover {{ background: #3dde8a; }}
 
 QPushButton#actionRed {{
     background: {RED_BTN}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px; font-weight: bold; padding: 5px 12px;
+    font-size: 12px; font-weight: bold; padding: 6px 14px;
 }}
 QPushButton#actionRed:hover {{ background: #e74c3c; }}
 
 QPushButton#actionBlue {{
     background: {BLUE_BTN}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px; font-weight: bold; padding: 5px 12px;
+    font-size: 12px; font-weight: bold; padding: 6px 14px;
 }}
 QPushButton#actionBlue:hover {{ background: #3498db; }}
 
 QPushButton#actionOrange {{
     background: {ORANGE}; color: white; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 10px; font-weight: bold; padding: 5px 12px;
+    font-size: 12px; font-weight: bold; padding: 6px 14px;
 }}
 QPushButton#actionOrange:hover {{ background: #e09000; }}
 
 QPushButton#histSmall {{
     background: {SURFACE2}; color: {FG_DIM}; border: none; border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 9px; padding: 3px 6px;
+    font-size: 12px; padding: 4px 8px;
 }}
 QPushButton#histSmall:hover {{ background: {KEY_HOV}; color: {FG}; }}
 
@@ -201,7 +201,7 @@ QListWidget {{
     background: {HIST_BG}; color: {FG}; border: 1px solid {SURFACE};
     border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
-    font-size: 11px;
+    font-size: 12px;
     outline: 0;
 }}
 QListWidget::item {{

@@ -18,11 +18,11 @@ class KeyboardTab(QWidget):
     layout_changed = pyqtSignal(str)
     american_mode_changed = pyqtSignal(bool)
 
-    _KEY_W          = 45
-    _KEY_H          = 52
+    _KEY_W          = 48
+    _KEY_H          = 55
     _KEY_SPACING    = 3
     _ROW_INDENT     = [0, 15, 30]
-    _HIST_PANEL_W   = 180
+    _HIST_PANEL_W   = 160
     _DEFAULT_FONT_SIZE = 14
 
     def __init__(self, mapping_provider, parent=None):
@@ -75,7 +75,7 @@ class KeyboardTab(QWidget):
         self._vbox = QVBoxLayout(self._left_panel)
         self._vbox.setContentsMargins(8, 8, 8, 6)
         self._vbox.setSpacing(6)
-        root_h.addWidget(self._left_panel, 1)
+        root_h.addWidget(self._left_panel, 3)
 
         div = QFrame()
         div.setObjectName("divider")
@@ -84,7 +84,7 @@ class KeyboardTab(QWidget):
         root_h.addWidget(div)
 
         self._hist_panel = self._build_history_panel()
-        root_h.addWidget(self._hist_panel)
+        root_h.addWidget(self._hist_panel, 1)
 
         self._build_header()
         self._build_textarea()
@@ -98,7 +98,7 @@ class KeyboardTab(QWidget):
     def _build_history_panel(self) -> QWidget:
         panel = QWidget()
         panel.setObjectName("root")
-        panel.setFixedWidth(self._HIST_PANEL_W)
+        panel.setMinimumWidth(self._HIST_PANEL_W)
         vbox = QVBoxLayout(panel)
         vbox.setContentsMargins(8, 10, 8, 8)
         vbox.setSpacing(5)
@@ -215,7 +215,7 @@ class KeyboardTab(QWidget):
         self._kb_layout = QVBoxLayout(self._kb_widget)
         self._kb_layout.setContentsMargins(0, 0, 0, 0)
         self._kb_layout.setSpacing(self._KEY_SPACING)
-        self._vbox.addWidget(self._kb_widget, 1)
+        self._vbox.addWidget(self._kb_widget, 2)
 
     def _build_bottom_bar(self):
         row = QHBoxLayout()
@@ -301,8 +301,8 @@ class KeyboardTab(QWidget):
             return
         total_keys = len(LAYOUTS[self._current_layout][0])
         available_w = self._left_panel.width() - 40
-        key_w = max(38, min(65, (available_w - self._ROW_INDENT[-1] - (total_keys - 1) * self._KEY_SPACING) // total_keys))
-        key_h = max(42, min(65, int(self._kb_widget.height() * 0.3)))
+        key_w = max(42, min(75, (available_w - self._ROW_INDENT[-1] - (total_keys - 1) * self._KEY_SPACING) // total_keys))
+        key_h = max(46, min(75, int(self._kb_widget.height() * 0.32)))
 
         for key in self._char_keys:
             key.setMinimumSize(key_w, key_h)

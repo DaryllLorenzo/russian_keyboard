@@ -199,7 +199,7 @@ class RussianTypingTrainerWidget(QWidget):
 
             QLabel#title {{
                 color: {FG};
-                font-size: 18px;
+                font-size: 20px;
                 font-weight: 800;
                 font-family: Consolas, "Courier New", monospace;
                 padding: 3px 0;
@@ -217,7 +217,7 @@ class RussianTypingTrainerWidget(QWidget):
 
             QLabel#meaning {{
                 color: {GREEN};
-                font-size: 14px;
+                font-size: 16px;
                 font-family: Consolas, "Courier New", monospace;
                 padding: 4px;
             }}
@@ -228,7 +228,7 @@ class RussianTypingTrainerWidget(QWidget):
                 border: 1px solid #404040;
                 border-radius: 4px;
                 font-family: Consolas, "Courier New", monospace;
-                font-size: 14px;
+                font-size: 16px;
                 padding: 6px;
             }}
             QTextEdit:focus {{
@@ -237,7 +237,7 @@ class RussianTypingTrainerWidget(QWidget):
 
             QLabel#errorLabel {{
                 color: {RED};
-                font-size: 10px;
+                font-size: 13px;
                 font-weight: bold;
                 padding: 2px;
             }}
@@ -248,8 +248,8 @@ class RussianTypingTrainerWidget(QWidget):
                 border-radius: 4px;
                 text-align: center;
                 color: {FG};
-                font-size: 10px;
-                height: 18px;
+                font-size: 11px;
+                height: 20px;
             }}
             QProgressBar::chunk {{
                 background: {KEY_ACT};
@@ -258,7 +258,7 @@ class RussianTypingTrainerWidget(QWidget):
 
             QLabel#progressLabel {{
                 color: {FG_DIM};
-                font-size: 10px;
+                font-size: 13px;
                 font-family: Consolas, "Courier New", monospace;
             }}
 
@@ -268,9 +268,9 @@ class RussianTypingTrainerWidget(QWidget):
                 border: none;
                 border-radius: 4px;
                 font-family: Consolas, "Courier New", monospace;
-                font-size: 10px;
+                font-size: 13px;
                 font-weight: bold;
-                padding: 6px 12px;
+                padding: 8px 16px;
             }}
             QPushButton#actionGreen:hover {{ background: #3dde8a; }}
 
@@ -280,9 +280,9 @@ class RussianTypingTrainerWidget(QWidget):
                 border: none;
                 border-radius: 4px;
                 font-family: Consolas, "Courier New", monospace;
-                font-size: 10px;
+                font-size: 13px;
                 font-weight: bold;
-                padding: 6px 12px;
+                padding: 8px 16px;
             }}
             QPushButton#actionOrange:hover {{ background: #e09000; }}
 
@@ -294,7 +294,7 @@ class RussianTypingTrainerWidget(QWidget):
 
             QLabel#statsTitle {{
                 color: {FG};
-                font-size: 13px;
+                font-size: 15px;
                 font-weight: bold;
                 font-family: Consolas, "Courier New", monospace;
                 padding-bottom: 4px;
@@ -302,14 +302,14 @@ class RussianTypingTrainerWidget(QWidget):
 
             QLabel#statsText {{
                 color: {FG_DIM};
-                font-size: 11px;
+                font-size: 13px;
                 font-family: Consolas, "Courier New", monospace;
                 padding: 2px 0;
             }}
 
             QLabel#statsScore {{
                 color: {KEY_ACT};
-                font-size: 14px;
+                font-size: 18px;
                 font-weight: bold;
                 font-family: Consolas, "Courier New", monospace;
                 padding: 4px 0;
@@ -317,7 +317,7 @@ class RussianTypingTrainerWidget(QWidget):
 
             QLabel#mistakesTitle {{
                 color: {FG};
-                font-size: 11px;
+                font-size: 13px;
                 font-weight: bold;
                 font-family: Consolas, "Courier New", monospace;
                 padding: 4px 0 2px 0;
@@ -329,7 +329,7 @@ class RussianTypingTrainerWidget(QWidget):
                 border: 1px solid {SURFACE2};
                 border-radius: 4px;
                 font-family: Consolas, "Courier New", monospace;
-                font-size: 10px;
+                font-size: 12px;
             }}
             QListWidget#mistakesList::item {{
                 padding: 4px;
@@ -350,7 +350,7 @@ class RussianTypingTrainerWidget(QWidget):
 
             QLabel#kbTitle {{
                 color: {FG};
-                font-size: 11px;
+                font-size: 13px;
                 font-weight: bold;
                 font-family: Consolas, "Courier New", monospace;
             }}
@@ -361,9 +361,9 @@ class RussianTypingTrainerWidget(QWidget):
                 border: none;
                 border-radius: 4px;
                 font-family: Consolas, "Courier New", monospace;
-                font-size: 10px;
+                font-size: 13px;
                 font-weight: bold;
-                padding: 4px;
+                padding: 5px;
             }}
             QPushButton#shiftKey:hover {{ background: #3498db; }}
 
@@ -373,7 +373,7 @@ class RussianTypingTrainerWidget(QWidget):
                 border: 1px solid #484848;
                 border-radius: 5px;
                 font-family: Consolas, "Courier New", monospace;
-                font-size: 11px;
+                font-size: 13px;
                 font-weight: 600;
                 padding: 6px;
             }}
@@ -384,7 +384,7 @@ class RussianTypingTrainerWidget(QWidget):
                 color: #ff8080;
                 border: 1px solid #6a3030;
                 border-radius: 5px;
-                font-size: 14px;
+                font-size: 17px;
                 font-weight: bold;
                 padding: 6px;
             }}
