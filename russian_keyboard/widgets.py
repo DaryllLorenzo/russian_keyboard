@@ -7,6 +7,7 @@ from russian_keyboard.constants import (
     FG, FG_DIM, AREA_BG, GREEN, RED, ERROR_BG,
     QWERTY_TO_CYRILLIC, QWERTY_TO_CYRILLIC_SHIFT,
 )
+from russian_keyboard.keyboard import build_mapping
 from russian_keyboard.translations import tr
 
 
@@ -131,6 +132,10 @@ class TypingLine(QTextEdit):
         self.setPlaceholderText(tr("trainer_placeholder"))
         self.setMaximumHeight(70)
         self._shift_pressed = False
+        self._mapping: dict | None = None
+
+    def set_mapping(self, mapping: dict):
+        self._mapping = mapping
 
     def set_placeholder_text(self, text: str):
         self.setPlaceholderText(text)
@@ -180,8 +185,15 @@ class TypingLine(QTextEdit):
         cyrillic_char = None
         shift = bool(modifiers & Qt.KeyboardModifier.ShiftModifier)
 
-        if key in QWERTY_TO_CYRILLIC:
-            cyrillic_char = QWERTY_TO_CYRILLIC_SHIFT[key] if shift else QWERTY_TO_CYRILLIC[key]
+        mapping = self._mapping if self._mapping is not None else QWERTY_TO_CYRILLIC
+        mapping_shift = self._mapping if self._mapping is not None else QWERTY_TO_CYRILLIC_SHIFT
+
+        if key in mapping:
+            if self._mapping is not None:
+                _, upper = mapping[key]
+                cyrillic_char = upper if shift else mapping[key][0]
+            else:
+                cyrillic_char = mapping_shift[key] if shift else mapping[key]
 
         if cyrillic_char and self.current_pos < len(self.target_text):
             expected = self.target_text[self.current_pos]

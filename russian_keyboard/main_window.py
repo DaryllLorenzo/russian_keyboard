@@ -71,6 +71,8 @@ class RussianKeyboard(QMainWindow):
         self.tabs.addTab(self.keyboard_tab, tr("tab_keyboard"))
 
         self.trainer_widget = RussianTypingTrainerWidget()
+        self.trainer_widget.set_layout(self._current_layout)
+        self.keyboard_tab.layout_changed.connect(self.trainer_widget.set_layout)
         self.tabs.addTab(self.trainer_widget, tr("tab_training"))
 
         self.setStyleSheet(QSS + """

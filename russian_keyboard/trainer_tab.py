@@ -3,6 +3,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QFrame, QProgressBar, QMessageBox, QListWidget, QListWidgetItem,
+    QDialog,
 )
 
 from russian_keyboard.constants import (
@@ -10,7 +11,8 @@ from russian_keyboard.constants import (
     FG, FG_DIM, AREA_BG, GREEN, RED, ORANGE, BLUE, ERROR_BG,
     VOCABULARY,
 )
-from russian_keyboard.keyboard import LAYOUTS, ROW_INDENT, KEY_SPACING
+from russian_keyboard.keyboard import LAYOUTS, ROW_INDENT, KEY_SPACING, build_mapping
+from russian_keyboard.vocab_dialog import VocabularyDialog
 from russian_keyboard.translations import tr
 from russian_keyboard.widgets import CharKey, TypingLine
 from russian_keyboard.trainer_session import TrainingSession
@@ -21,7 +23,9 @@ class RussianTypingTrainerWidget(QWidget):
         super().__init__(parent)
         self.setObjectName("trainerRoot")
 
-        self.session = TrainingSession(VOCABULARY, words_per_session=10)
+        self._current_layout = "ЙЦУКЕН"
+        self.vocabulary = list(VOCABULARY)
+        self.session = TrainingSession(self.vocabulary, words_per_session=10)
         self.error_timer = QTimer()
         self.error_timer.setSingleShot(True)
         self.error_timer.timeout.connect(self.clear_error_indicator)
@@ -30,6 +34,7 @@ class RussianTypingTrainerWidget(QWidget):
 
         self.setup_ui()
         self.start_new_session()
+        self._update_mapping()
 
     def setup_ui(self):
         main_layout = QHBoxLayout(self)
@@ -89,6 +94,13 @@ class RussianTypingTrainerWidget(QWidget):
         self.reset_btn.setObjectName("actionOrange")
         self.reset_btn.clicked.connect(self.reset_current_word)
         btn_layout.addWidget(self.reset_btn)
+
+        btn_layout.addStretch()
+
+        self.vocab_btn = QPushButton(tr("vocab_manage"))
+        self.vocab_btn.setObjectName("actionBlue")
+        self.vocab_btn.clicked.connect(self._manage_vocabulary)
+        btn_layout.addWidget(self.vocab_btn)
 
         left_layout.addLayout(btn_layout)
 
@@ -409,7 +421,7 @@ class RussianTypingTrainerWidget(QWidget):
                 widget.deleteLater()
         self._char_keys.clear()
 
-        layout_data = LAYOUTS["ЙЦУКЕН"]
+        layout_data = LAYOUTS[self._current_layout]
         for ri, row_data in enumerate(layout_data):
             row_widget = QWidget()
             row_h = QHBoxLayout(row_widget)
@@ -461,10 +473,20 @@ class RussianTypingTrainerWidget(QWidget):
                 self.typing_area.current_pos -= 1
                 self.typing_area.update_highlighting()
 
+    def set_layout(self, layout_name: str):
+        self._current_layout = layout_name
+        self.build_virtual_keyboard()
+        self._update_mapping()
+
+    def _update_mapping(self):
+        mapping = build_mapping(self._current_layout)
+        self.typing_area.set_mapping(mapping)
+
     def retranslate_ui(self):
         self._trainer_title.setText(tr("title_trainer"))
         self.new_session_btn.setText(tr("trainer_new_session"))
         self.reset_btn.setText(tr("trainer_reset_word"))
+        self.vocab_btn.setText(tr("vocab_manage"))
         self._stats_title.setText(tr("trainer_stats_title"))
         self._mistakes_title.setText(tr("trainer_review_title"))
         self._kb_title.setText(tr("trainer_kb_title"))
@@ -475,7 +497,14 @@ class RussianTypingTrainerWidget(QWidget):
         self.update_stats_display()
         self.update_progress()
 
+    def _manage_vocabulary(self):
+        dialog = VocabularyDialog(self.vocabulary, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.vocabulary = dialog.get_vocabulary()
+            self.start_new_session()
+
     def start_new_session(self):
+        self.session = TrainingSession(self.vocabulary, words_per_session=10)
         self.session.generate_session()
         self.update_stats_display()
         self.load_current_word()
