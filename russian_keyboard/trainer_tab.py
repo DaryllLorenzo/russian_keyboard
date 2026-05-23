@@ -6,11 +6,7 @@ from PyQt6.QtWidgets import (
     QDialog,
 )
 
-from russian_keyboard.constants import (
-    BG, SURFACE, SURFACE2, KEY_BG, KEY_HOV, KEY_ACT,
-    FG, FG_DIM, AREA_BG, GREEN, RED, ORANGE, BLUE, ERROR_BG,
-    VOCABULARY,
-)
+from russian_keyboard import constants
 from russian_keyboard.keyboard import LAYOUTS, ROW_INDENT, KEY_SPACING, build_mapping
 from russian_keyboard.vocab_dialog import VocabularyDialog
 from russian_keyboard.translations import tr
@@ -24,7 +20,7 @@ class RussianTypingTrainerWidget(QWidget):
         self.setObjectName("trainerRoot")
 
         self._current_layout = "ЙЦУКЕН"
-        self.vocabulary = list(VOCABULARY)
+        self.vocabulary = list(constants.VOCABULARY)
         self.session = TrainingSession(self.vocabulary, words_per_session=10)
         self.error_timer = QTimer()
         self.error_timer.setSingleShot(True)
@@ -198,12 +194,12 @@ class RussianTypingTrainerWidget(QWidget):
         main_layout.addWidget(left_panel, 1)
         main_layout.addWidget(right_panel, 1)
 
-        self.setup_stylesheet()
+        self.apply_theme()
 
-    def setup_stylesheet(self):
+    def apply_theme(self):
         self.setStyleSheet(f"""
             QWidget#trainerRoot {{
-                background: {BG};
+                background: {constants.BG};
             }}
 
             QWidget#leftPanel, QWidget#rightPanel {{
@@ -211,7 +207,7 @@ class RussianTypingTrainerWidget(QWidget):
             }}
 
             QLabel#title {{
-                color: {FG};
+                color: {constants.FG};
                 font-size: 20px;
                 font-weight: 800;
                 font-family: Consolas, "Courier New", monospace;
@@ -219,76 +215,64 @@ class RussianTypingTrainerWidget(QWidget):
             }}
 
             QLabel#currentWord {{
-                color: {KEY_ACT};
+                color: {constants.KEY_ACT};
                 font-size: 42px;
                 font-weight: 700;
                 font-family: Consolas, "Courier New", monospace;
-                background: {SURFACE2};
+                background: {constants.SURFACE2};
                 padding: 20px;
                 border-radius: 8px;
             }}
 
             QLabel#meaning {{
-                color: {GREEN};
+                color: {constants.GREEN};
                 font-size: 16px;
                 font-family: Consolas, "Courier New", monospace;
                 padding: 4px;
             }}
 
             QTextEdit {{
-                background: {AREA_BG};
-                color: {FG};
-                border: 1px solid #404040;
+                background: {constants.AREA_BG};
+                color: {constants.FG};
+                border: 1px solid {constants.BORDER};
                 border-radius: 4px;
                 font-family: Consolas, "Courier New", monospace;
                 font-size: 16px;
                 padding: 6px;
             }}
             QTextEdit:focus {{
-                border-color: {KEY_ACT};
+                border-color: {constants.KEY_ACT};
             }}
 
             QLabel#errorLabel {{
-                color: {RED};
+                color: {constants.RED};
                 font-size: 13px;
                 font-weight: bold;
                 padding: 2px;
             }}
 
             QProgressBar {{
-                background: {SURFACE2};
+                background: {constants.SURFACE2};
                 border: none;
                 border-radius: 4px;
                 text-align: center;
-                color: {FG};
+                color: {constants.FG};
                 font-size: 11px;
                 height: 20px;
             }}
             QProgressBar::chunk {{
-                background: {KEY_ACT};
+                background: {constants.KEY_ACT};
                 border-radius: 4px;
             }}
 
             QLabel#progressLabel {{
-                color: {FG_DIM};
+                color: {constants.FG_DIM};
                 font-size: 13px;
                 font-family: Consolas, "Courier New", monospace;
             }}
 
             QPushButton#actionGreen {{
-                background: {GREEN};
-                color: #1e1e1e;
-                border: none;
-                border-radius: 4px;
-                font-family: Consolas, "Courier New", monospace;
-                font-size: 13px;
-                font-weight: bold;
-                padding: 8px 16px;
-            }}
-            QPushButton#actionGreen:hover {{ background: #3dde8a; }}
-
-            QPushButton#actionOrange {{
-                background: {ORANGE};
+                background: {constants.GREEN};
                 color: white;
                 border: none;
                 border-radius: 4px;
@@ -297,16 +281,28 @@ class RussianTypingTrainerWidget(QWidget):
                 font-weight: bold;
                 padding: 8px 16px;
             }}
-            QPushButton#actionOrange:hover {{ background: #e09000; }}
+            QPushButton#actionGreen:hover {{ background: {constants.GREEN_HOV}; }}
+
+            QPushButton#actionOrange {{
+                background: {constants.ORANGE};
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 8px 16px;
+            }}
+            QPushButton#actionOrange:hover {{ background: {constants.ORANGE_HOV}; }}
 
             QFrame#statsFrame {{
-                background: {SURFACE2};
+                background: {constants.SURFACE2};
                 border-radius: 6px;
                 padding: 8px;
             }}
 
             QLabel#statsTitle {{
-                color: {FG};
+                color: {constants.FG};
                 font-size: 15px;
                 font-weight: bold;
                 font-family: Consolas, "Courier New", monospace;
@@ -314,14 +310,14 @@ class RussianTypingTrainerWidget(QWidget):
             }}
 
             QLabel#statsText {{
-                color: {FG_DIM};
+                color: {constants.FG_DIM};
                 font-size: 13px;
                 font-family: Consolas, "Courier New", monospace;
                 padding: 2px 0;
             }}
 
             QLabel#statsScore {{
-                color: {KEY_ACT};
+                color: {constants.KEY_ACT};
                 font-size: 18px;
                 font-weight: bold;
                 font-family: Consolas, "Courier New", monospace;
@@ -329,7 +325,7 @@ class RussianTypingTrainerWidget(QWidget):
             }}
 
             QLabel#mistakesTitle {{
-                color: {FG};
+                color: {constants.FG};
                 font-size: 13px;
                 font-weight: bold;
                 font-family: Consolas, "Courier New", monospace;
@@ -337,39 +333,39 @@ class RussianTypingTrainerWidget(QWidget):
             }}
 
             QListWidget#mistakesList {{
-                background: {SURFACE};
-                color: {FG};
-                border: 1px solid {SURFACE2};
+                background: {constants.SURFACE};
+                color: {constants.FG};
+                border: 1px solid {constants.SURFACE2};
                 border-radius: 4px;
                 font-family: Consolas, "Courier New", monospace;
                 font-size: 12px;
             }}
             QListWidget#mistakesList::item {{
                 padding: 4px;
-                border-bottom: 1px solid {SURFACE2};
+                border-bottom: 1px solid {constants.SURFACE2};
             }}
             QListWidget#mistakesList::item:hover {{
-                background: {KEY_HOV};
+                background: {constants.KEY_HOV};
             }}
             QListWidget#mistakesList::item:selected {{
-                background: {KEY_ACT};
+                background: {constants.KEY_ACT};
             }}
 
             QFrame#kbFrame {{
-                background: {SURFACE};
+                background: {constants.SURFACE};
                 border-radius: 6px;
                 padding: 8px;
             }}
 
             QLabel#kbTitle {{
-                color: {FG};
+                color: {constants.FG};
                 font-size: 13px;
                 font-weight: bold;
                 font-family: Consolas, "Courier New", monospace;
             }}
 
             QPushButton#shiftKey {{
-                background: {BLUE};
+                background: {constants.BLUE};
                 color: white;
                 border: none;
                 border-radius: 4px;
@@ -378,40 +374,40 @@ class RussianTypingTrainerWidget(QWidget):
                 font-weight: bold;
                 padding: 5px;
             }}
-            QPushButton#shiftKey:hover {{ background: #3498db; }}
+            QPushButton#shiftKey:hover {{ background: {constants.BLUE_HOV}; }}
 
             QPushButton#wideKey {{
-                background: {SURFACE2};
-                color: {FG};
-                border: 1px solid #484848;
+                background: {constants.SURFACE2};
+                color: {constants.FG};
+                border: 1px solid {constants.BORDER};
                 border-radius: 5px;
                 font-family: Consolas, "Courier New", monospace;
                 font-size: 13px;
                 font-weight: 600;
                 padding: 6px;
             }}
-            QPushButton#wideKey:hover {{ background: {KEY_HOV}; }}
+            QPushButton#wideKey:hover {{ background: {constants.KEY_HOV}; }}
 
             QPushButton#bsKey {{
-                background: #4a2020;
-                color: #ff8080;
-                border: 1px solid #6a3030;
+                background: {constants.BS_BG};
+                color: {constants.BS_FG};
+                border: 1px solid {constants.BS_BORDER};
                 border-radius: 5px;
                 font-size: 17px;
                 font-weight: bold;
                 padding: 6px;
             }}
-            QPushButton#bsKey:hover {{ background: #5c2828; }}
+            QPushButton#bsKey:hover {{ background: {constants.BS_HOV_BG}; }}
 
             QPushButton#charKey {{
-                background: {KEY_BG};
-                color: {FG};
+                background: {constants.KEY_BG};
+                color: {constants.FG};
                 border: none;
                 border-radius: 5px;
                 font-family: Consolas, "Courier New", monospace;
                 font-weight: bold;
             }}
-            QPushButton#charKey:hover {{ background: {KEY_HOV}; }}
+            QPushButton#charKey:hover {{ background: {constants.KEY_HOV}; }}
         """)
 
     def build_virtual_keyboard(self):
@@ -461,7 +457,7 @@ class RussianTypingTrainerWidget(QWidget):
 
     def toggle_vk_shift(self):
         self._shift_active = not self._shift_active
-        self.vk_shift_btn.setStyleSheet(f"background: {KEY_ACT if self._shift_active else BLUE};")
+        self.vk_shift_btn.setStyleSheet(f"background: {constants.KEY_ACT if self._shift_active else constants.BLUE};")
         for key in self._char_keys:
             key.set_shift(self._shift_active)
 
@@ -555,7 +551,7 @@ class RussianTypingTrainerWidget(QWidget):
         self.error_timer.start(2000)
 
         original_style = self.typing_area.styleSheet()
-        self.typing_area.setStyleSheet(f"background: {ERROR_BG}; border: 2px solid {RED};")
+        self.typing_area.setStyleSheet(f"background: {constants.ERROR_BG}; border: 2px solid {constants.RED};")
         QTimer.singleShot(500, lambda: self.typing_area.setStyleSheet(original_style))
 
     def clear_error_indicator(self):
@@ -567,7 +563,7 @@ class RussianTypingTrainerWidget(QWidget):
             self.typing_area.set_target(current[0])
             self.typing_area.setFocus()
             self.error_label.setText(tr("trainer_error_reset"))
-            self.error_label.setStyleSheet(f"color: {BLUE};")
+            self.error_label.setStyleSheet(f"color: {constants.BLUE};")
             QTimer.singleShot(2000, self.clear_error_indicator)
 
     def practice_mistake(self, item):

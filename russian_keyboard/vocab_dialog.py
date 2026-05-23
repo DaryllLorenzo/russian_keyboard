@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox, QMessageBox, QFileDialog,
 )
 
+from russian_keyboard import constants
 from russian_keyboard.translations import tr
 
 
@@ -56,6 +57,58 @@ class VocabularyDialog(QDialog):
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
 
+        self.apply_theme()
+
+    def apply_theme(self):
+        self.setStyleSheet(f"""
+            QDialog {{
+                background: {constants.BG};
+            }}
+            QLabel {{
+                color: {constants.FG};
+                font-family: Consolas, "Courier New", monospace;
+            }}
+            QListWidget {{
+                background: {constants.SURFACE};
+                color: {constants.FG};
+                border: 1px solid {constants.BORDER};
+                border-radius: 4px;
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 13px;
+            }}
+            QListWidget::item {{
+                padding: 4px 6px;
+                border-bottom: 1px solid {constants.SURFACE2};
+            }}
+            QListWidget::item:hover {{
+                background: {constants.KEY_HOV};
+            }}
+            QListWidget::item:selected {{
+                background: {constants.KEY_ACT};
+                color: white;
+            }}
+            QPushButton {{
+                background: {constants.SURFACE2};
+                color: {constants.FG};
+                border: 1px solid {constants.BORDER};
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-family: Consolas, "Courier New", monospace;
+                font-size: 12px;
+            }}
+            QPushButton:hover {{
+                background: {constants.KEY_HOV};
+            }}
+            QLineEdit {{
+                background: {constants.AREA_BG};
+                color: {constants.FG};
+                border: 1px solid {constants.BORDER};
+                border-radius: 4px;
+                padding: 4px;
+                font-family: Consolas, "Courier New", monospace;
+            }}
+        """)
+
     def _populate_list(self):
         self._list_widget.clear()
         for russian, meaning in self._vocab:
@@ -67,6 +120,7 @@ class VocabularyDialog(QDialog):
         dialog = QDialog(self)
         dialog.setWindowTitle(tr("vocab_add"))
         dialog.setMinimumWidth(300)
+        dialog.setStyleSheet(self.styleSheet())
 
         form = QFormLayout(dialog)
         russian_input = QLineEdit()

@@ -2,11 +2,7 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QKeyEvent, QPainter, QFont, QColor
 from PyQt6.QtWidgets import QPushButton, QTextEdit
 
-from russian_keyboard.constants import (
-    BG, SURFACE, SURFACE2, KEY_BG, KEY_HOV, KEY_ACT,
-    FG, FG_DIM, AREA_BG, GREEN, RED, ERROR_BG,
-    QWERTY_TO_CYRILLIC, QWERTY_TO_CYRILLIC_SHIFT,
-)
+from russian_keyboard import constants
 from russian_keyboard.keyboard import build_mapping
 from russian_keyboard.translations import tr
 
@@ -64,7 +60,7 @@ class CharKey(QPushButton):
         painter.eraseRect(event.rect())
 
         is_hovered = self.testAttribute(Qt.WidgetAttribute.WA_Hover)
-        bg_color = KEY_ACT if self._pressed else (KEY_HOV if is_hovered else KEY_BG)
+        bg_color = constants.KEY_ACT if self._pressed else (constants.KEY_HOV if is_hovered else constants.KEY_BG)
         painter.fillRect(event.rect(), QColor(bg_color))
 
         if self._american_mode:
@@ -76,14 +72,14 @@ class CharKey(QPushButton):
         fs = max(16, min(28, key_h // 2 - 2))
         font_main.setPixelSize(fs)
         painter.setFont(font_main)
-        painter.setPen(QColor(FG if not self._pressed else "#ffffff"))
+        painter.setPen(QColor(constants.FG if not self._pressed else "#ffffff"))
         painter.drawText(event.rect(), Qt.AlignmentFlag.AlignCenter, main_text)
 
         font_h = QFont("Consolas", 0, QFont.Weight.Normal)
         hs = max(8, min(12, key_h // 5))
         font_h.setPixelSize(hs)
         painter.setFont(font_h)
-        painter.setPen(QColor(FG_DIM))
+        painter.setPen(QColor(constants.FG_DIM))
         r = event.rect()
         hint = (self.upper if self._shift_state else self.lower) if self._american_mode else self.latin
         painter.drawText(r.adjusted(0, 0, -3, -2), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom, hint)
@@ -185,8 +181,8 @@ class TypingLine(QTextEdit):
         cyrillic_char = None
         shift = bool(modifiers & Qt.KeyboardModifier.ShiftModifier)
 
-        mapping = self._mapping if self._mapping is not None else QWERTY_TO_CYRILLIC
-        mapping_shift = self._mapping if self._mapping is not None else QWERTY_TO_CYRILLIC_SHIFT
+        mapping = self._mapping if self._mapping is not None else constants.QWERTY_TO_CYRILLIC
+        mapping_shift = self._mapping if self._mapping is not None else constants.QWERTY_TO_CYRILLIC_SHIFT
 
         if key in mapping:
             if self._mapping is not None:
@@ -232,15 +228,15 @@ class TypingLine(QTextEdit):
     def update_highlighting(self):
         text = self.toPlainText()
         if not text:
-            self.setTextColor(QColor(FG))
+            self.setTextColor(QColor(constants.FG))
             return
 
         html = '<html><body>'
         correct_part = text[:self.current_pos]
         if correct_part:
-            html += f'<span style="color: {GREEN};">{correct_part}</span>'
+            html += f'<span style="color: {constants.GREEN};">{correct_part}</span>'
         remaining = self.target_text[self.current_pos:]
         if remaining:
-            html += f'<span style="color: {FG_DIM};">{remaining}</span>'
+            html += f'<span style="color: {constants.FG_DIM};">{remaining}</span>'
         html += '</body></html>'
         self.setHtml(html)

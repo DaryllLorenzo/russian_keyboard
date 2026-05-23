@@ -5,11 +5,7 @@ from PyQt6.QtWidgets import (
     QFrame, QSlider, QSpinBox, QApplication,
 )
 
-from russian_keyboard.constants import (
-    BG, SURFACE, SURFACE2, KEY_BG, KEY_HOV, KEY_ACT,
-    FG, FG_DIM, BLUE_BTN, GREEN, RED_BTN, ORANGE,
-    HIST_BG, HIST_SEL,
-)
+from russian_keyboard import constants
 from russian_keyboard.keyboard import LAYOUTS
 from russian_keyboard.translations import tr
 from russian_keyboard.widgets import CharKey, RussianTextEdit
@@ -59,6 +55,9 @@ class KeyboardTab(QWidget):
 
     def focus_text_area(self):
         self._ta.setFocus()
+
+    def apply_theme(self):
+        self._draw_keyboard()
 
     # ── UI setup ──────────────────────────────────────────────────────────────
 

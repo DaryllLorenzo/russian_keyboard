@@ -1,7 +1,7 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QHBoxLayout, QVBoxLayout, QPushButton
 
-from russian_keyboard.constants import QSS
+from russian_keyboard import constants
 from russian_keyboard.keyboard import build_mapping, build_american_mapping
 from russian_keyboard.keyboard_tab import KeyboardTab
 from russian_keyboard.trainer_tab import RussianTypingTrainerWidget
@@ -43,6 +43,12 @@ class RussianKeyboard(QMainWindow):
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(4, 4, 4, 0)
 
+        self._theme_btn = QPushButton()
+        self._theme_btn.setObjectName("themeBtn")
+        self._theme_btn.setFixedWidth(36)
+        self._theme_btn.clicked.connect(self._toggle_theme)
+        header_layout.addWidget(self._theme_btn)
+
         es_btn = QPushButton("ES")
         es_btn.setObjectName("langBtn")
         es_btn.setFixedWidth(36)
@@ -75,18 +81,39 @@ class RussianKeyboard(QMainWindow):
         self.keyboard_tab.layout_changed.connect(self.trainer_widget.set_layout)
         self.tabs.addTab(self.trainer_widget, tr("tab_training"))
 
-        self.setStyleSheet(QSS + """
-            QPushButton#langBtn {
-                background: #3c3c3c; color: #b0b0b0; border: 1px solid #484848;
+        self._apply_theme()
+
+    def _toggle_theme(self):
+        new = "light" if constants.current_theme() == "dark" else "dark"
+        constants.set_theme(new)
+        self._apply_theme()
+
+    def _apply_theme(self):
+        is_dark = constants.current_theme() == "dark"
+        self._theme_btn.setText("\u2601" if is_dark else "\u2600")
+
+        self.setStyleSheet(constants.QSS + f"""
+            QPushButton#langBtn {{
+                background: {constants.KEY_BG}; color: {constants.FG_DIM}; border: 1px solid {constants.BORDER};
                 border-radius: 4px; font-size: 12px; font-weight: bold; padding: 4px;
-            }
-            QPushButton#langBtn:checked {
-                background: #e94560; color: white; border-color: #e94560;
-            }
-            QPushButton#langBtn:hover:!checked {
-                background: #4a4a4a; color: #e8e8e8;
-            }
+            }}
+            QPushButton#langBtn:checked {{
+                background: {constants.KEY_ACT}; color: white; border-color: {constants.KEY_ACT};
+            }}
+            QPushButton#langBtn:hover:!checked {{
+                background: {constants.KEY_HOV}; color: {constants.FG};
+            }}
+            QPushButton#themeBtn {{
+                background: {constants.SURFACE2}; color: {constants.FG}; border: 1px solid {constants.BORDER};
+                border-radius: 4px; font-size: 14px; padding: 4px;
+            }}
+            QPushButton#themeBtn:hover {{
+                background: {constants.KEY_HOV};
+            }}
         """)
+
+        self.keyboard_tab.apply_theme()
+        self.trainer_widget.apply_theme()
 
     def _switch_language(self, lang: str, active_btn, other_btn):
         set_language(lang)
